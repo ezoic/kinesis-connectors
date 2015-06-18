@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
-	"log"
 	"os"
 
 	// Postgres package is used when sql.Open is called
@@ -27,9 +26,12 @@ type RedshiftBasicEmtitter struct {
 
 // Emit is invoked when the buffer is full. This method leverages the S3Emitter and
 // then issues a copy command to Redshift data store.
-func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer) {
+func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer) error {
 	s3Emitter := S3Emitter{S3Bucket: e.S3Bucket}
-	s3Emitter.Emit(b, t)
+	s3err := s3Emitter.Emit(b, t)
+	if s3err != nil {
+		return s3err
+	}
 	s3File := s3Emitter.S3FileName(b.FirstSequenceNumber(), b.LastSequenceNumber())
 
 	stmt := e.copyStatement(s3File)
@@ -42,7 +44,7 @@ func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer) {
 		handleAwsWaitTimeExp(i)
 
 		// load into the database
-		_, err := e.Db.Exec(stmt)
+		_, err = e.Db.Exec(stmt)
 
 		// if the request succeeded, or its an unrecoverable error, break out of the loop
 		// because we are done
@@ -56,10 +58,11 @@ func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer) {
 	}
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	l4g.Debug("Redshift load completed.")
+	return nil
 }
 
 // Creates the SQL copy statement issued to Redshift cluster.

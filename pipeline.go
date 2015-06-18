@@ -98,7 +98,10 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 
 		if p.Buffer.ShouldFlush() {
 			if p.Buffer.NumRecordsInBuffer() > 0 {
-				p.Emitter.Emit(p.Buffer, p.Transformer)
+				err := p.Emitter.Emit(p.Buffer, p.Transformer)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 			p.Checkpoint.SetCheckpoint(shardID, p.Buffer.LastSequenceNumber())
 			p.Buffer.Flush()

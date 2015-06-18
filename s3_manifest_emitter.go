@@ -13,7 +13,7 @@ type S3ManifestEmitter struct {
 	Ksis         *kinesis.Kinesis
 }
 
-func (e S3ManifestEmitter) Emit(b Buffer, t Transformer) {
+func (e S3ManifestEmitter) Emit(b Buffer, t Transformer) error {
 
 	// Emit buffer contents to S3 Bucket
 	s3Emitter := S3Emitter{S3Bucket: e.S3Bucket}
@@ -30,7 +30,9 @@ func (e S3ManifestEmitter) Emit(b Buffer, t Transformer) {
 
 	if err != nil {
 		l4g.Error("PutRecord ERROR: %v", err)
+		return err
 	} else {
 		l4g.Info("[%s] emitted to [%s]", b.FirstSequenceNumber(), e.OutputStream)
 	}
+	return nil
 }

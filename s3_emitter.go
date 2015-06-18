@@ -33,7 +33,7 @@ func (e S3Emitter) S3FileName(firstSeq string, lastSeq string) string {
 }
 
 // Emit is invoked when the buffer is full. This method emits the set of filtered records.
-func (e S3Emitter) Emit(b Buffer, t Transformer) {
+func (e S3Emitter) Emit(b Buffer, t Transformer) error {
 	auth, _ := aws.EnvAuth()
 	s3Con := s3.New(auth, aws.USEast)
 	bucket := s3Con.Bucket(e.S3Bucket)
@@ -50,7 +50,9 @@ func (e S3Emitter) Emit(b Buffer, t Transformer) {
 
 	if err != nil {
 		l4g.Error("S3Put ERROR: %v", err)
+		return err
 	} else {
 		l4g.Info("[%v] records emitted to [%s]", b.NumRecordsInBuffer(), e.S3Bucket)
 	}
+	return nil
 }

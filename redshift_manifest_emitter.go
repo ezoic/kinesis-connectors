@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -32,11 +31,11 @@ type RedshiftManifestEmitter struct {
 
 // Invoked when the buffer is full.
 // Emits a Manifest file to S3 and then performs the Redshift copy command.
-func (e RedshiftManifestEmitter) Emit(b Buffer, t Transformer) {
+func (e RedshiftManifestEmitter) Emit(b Buffer, t Transformer) error {
 	db, err := sql.Open("postgres", os.Getenv("REDSHIFT_URL"))
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// Aggregate file paths as strings
@@ -51,12 +50,15 @@ func (e RedshiftManifestEmitter) Emit(b Buffer, t Transformer) {
 	manifestFileName := e.getManifestName(date, files)
 
 	// Issue manifest COPY to Redshift
-	e.writeManifestToS3(files, manifestFileName)
+	err = e.writeManifestToS3(files, manifestFileName)
+	if err != nil {
+		return err
+	}
 	c := e.copyStmt(manifestFileName)
 	_, err = db.Exec(c)
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// Insert file paths into File Names table
@@ -64,11 +66,11 @@ func (e RedshiftManifestEmitter) Emit(b Buffer, t Transformer) {
 	_, err = db.Exec(i)
 
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	l4g.Info("[%v] copied to Redshift", manifestFileName)
-	db.Close()
+	return nil
 }
 
 // Creates the INSERT statement for the file names database table.
@@ -113,7 +115,7 @@ func (e RedshiftManifestEmitter) copyStmt(filePath string) string {
 }
 
 // Put the Manifest file contents to Redshift
-func (e RedshiftManifestEmitter) writeManifestToS3(files []string, manifestFileName string) {
+func (e RedshiftManifestEmitter) writeManifestToS3(files []string, manifestFileName string) error {
 	auth, _ := aws.EnvAuth()
 	s3Con := s3.New(auth, aws.USEast)
 	bucket := s3Con.Bucket(e.S3Bucket)
@@ -121,7 +123,9 @@ func (e RedshiftManifestEmitter) writeManifestToS3(files []string, manifestFileN
 	err := bucket.Put(manifestFileName, content, "text/plain", s3.Private, s3.Options{})
 	if err != nil {
 		l4g.Error("Error occured while uploding to S3: %v", err)
+		return err
 	}
+	return nil
 }
 
 // Manifest file name based on First and Last sequence numbers
