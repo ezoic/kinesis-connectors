@@ -2,6 +2,7 @@ package connector
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"testing"
 
@@ -12,11 +13,12 @@ func TestCopyStatement(t *testing.T) {
 	e := RedshiftBasicEmtitter{
 		Delimiter: ",",
 		S3Bucket:  "test_bucket",
+		S3Prefix:  "test_prefix",
 		TableName: "test_table",
 	}
-	f := e.copyStatement("test.txt")
+	f := e.copyStatement("test_prefix/test.txt")
 
-	copyStatement := "COPY test_table FROM 's3://test_bucket/test.txt' CREDENTIALS 'aws_access_key_id=;aws_secret_access_key=' DELIMITER ',';"
+	copyStatement := fmt.Sprintf("COPY test_table FROM 's3://test_bucket/test_prefix/test.txt' CREDENTIALS 'aws_access_key_id=%v;aws_secret_access_key=%v' DELIMITER ',';", os.Getenv("AWS_ACCESS_KEY"), os.Getenv("AWS_SECRET_KEY"))
 
 	if f != copyStatement {
 		t.Errorf("copyStatement() = %s want %s", f, copyStatement)
