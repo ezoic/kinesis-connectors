@@ -27,7 +27,7 @@ type RedshiftBasicEmtitter struct {
 // Emit is invoked when the buffer is full. This method leverages the S3Emitter and
 // then issues a copy command to Redshift data store.
 func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer) error {
-	s3Emitter := S3Emitter{S3Bucket: e.S3Bucket}
+	s3Emitter := S3Emitter{S3Prefix: e.S3Prefix, S3Bucket: e.S3Bucket}
 	s3err := s3Emitter.Emit(b, t)
 	if s3err != nil {
 		return s3err
