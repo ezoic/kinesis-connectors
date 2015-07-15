@@ -43,8 +43,18 @@ func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer) error {
 		// s3 file has not appeared to the database yet
 		handleAwsWaitTimeExp(i)
 
-		// load into the database
-		_, err = e.Db.Exec(stmt)
+		tx, err := e.Db.Begin()
+		if err == nil {
+
+			// load into the database
+			_, err = tx.Exec(stmt)
+			if err != nil {
+				tx.Rollback()
+			} else {
+				err = tx.Commit()
+			}
+
+		}
 
 		// if the request succeeded, or its an unrecoverable error, break out of the loop
 		// because we are done
