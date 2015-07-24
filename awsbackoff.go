@@ -1,7 +1,6 @@
 package connector
 
 import (
-	"log"
 	"math"
 	"net"
 	"net/url"
@@ -78,7 +77,7 @@ var isRecoverableErrors = []isRecoverableErrorFunc{
 func isRecoverableError(err error) bool {
 	r := false
 
-	log.Printf("isRecoverableError, type %s, value (%#v)\n", reflect.TypeOf(err).String(), err)
+	l4g.Debug("isRecoverableError, type %s, value (%#v)\n", reflect.TypeOf(err).String(), err)
 
 	for _, errF := range isRecoverableErrors {
 		r = errF(err)
