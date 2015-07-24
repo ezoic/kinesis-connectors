@@ -63,7 +63,7 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 		if err != nil {
 			if isRecoverableError(err) {
 				consecutiveErrorAttempts++
-				l4g.Info("recoverable error, %s (%d)", err, consecutiveErrorAttempts)
+				l4g.Debug("recoverable error, %s (%d)", err, consecutiveErrorAttempts)
 				continue
 			} else {
 				log.Fatalf("GetRecords ERROR: %v\n", err)
