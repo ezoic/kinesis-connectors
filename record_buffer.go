@@ -1,10 +1,14 @@
 package connector
 
+import "time"
+
 // RecordBuffer is a basic implementation of the Buffer interface.
 // It buffer's records and answers questions on when it should be periodically flushed.
 type RecordBuffer struct {
-	NumRecordsToBuffer int
+	NumRecordsToBuffer  int
+	MaxTimeBetweenFlush time.Duration
 
+	lastFlush           time.Time
 	firstSequenceNumber string
 	lastSequenceNumber  string
 	recordsInBuffer     []interface{}
@@ -13,6 +17,10 @@ type RecordBuffer struct {
 
 // ProcessRecord adds a message to the buffer.
 func (b *RecordBuffer) ProcessRecord(record interface{}, sequenceNumber string) {
+	if b.lastFlush <= 0 {
+		b.lastFlush = time.Now()
+	}
+
 	if len(b.sequencesInBuffer) == 0 {
 		b.firstSequenceNumber = sequenceNumber
 	}
@@ -39,6 +47,7 @@ func (b RecordBuffer) NumRecordsInBuffer() int {
 
 // Flush empties the buffer and resets the sequence counter.
 func (b *RecordBuffer) Flush() {
+	b.lastFlush = time.Now()
 	b.recordsInBuffer = b.recordsInBuffer[:0]
 	b.sequencesInBuffer = b.sequencesInBuffer[:0]
 }
@@ -55,7 +64,14 @@ func (b *RecordBuffer) sequenceExists(sequenceNumber string) bool {
 
 // ShouldFlush determines if the buffer has reached its target size.
 func (b *RecordBuffer) ShouldFlush() bool {
-	return len(b.sequencesInBuffer) >= b.NumRecordsToBuffer
+	if len(b.sequencesInBuffer) >= b.NumRecordsToBuffer {
+		return true
+	}
+
+	if b.MaxTimeBetweenFlush > 0 && len(b.sequencesInBuffer) > 0 && time.Since(b.lastFlush) > b.MaxTimeBetweenFlush {
+		return true
+	}
+	return false
 }
 
 // FirstSequenceNumber returns the sequence number of the first message in the buffer.
