@@ -17,7 +17,7 @@ type RecordBuffer struct {
 
 // ProcessRecord adds a message to the buffer.
 func (b *RecordBuffer) ProcessRecord(record interface{}, sequenceNumber string) {
-	if b.lastFlush <= 0 {
+	if b.lastFlush.IsZero() {
 		b.lastFlush = time.Now()
 	}
 
