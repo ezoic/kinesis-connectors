@@ -43,12 +43,15 @@ func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer) error {
 		// s3 file has not appeared to the database yet
 		HandleAwsWaitTimeExp(i)
 
-		tx, err := e.Db.Begin()
+		var tx *sql.Tx
+		tx, err = e.Db.Begin()
 		if err == nil {
 
 			// load into the database
 			_, err = tx.Exec(stmt)
+			l4g.Fine("error:%v", err)
 			if err != nil {
+				l4g.Warn("rolling back transaction for insert with file %v, %v", s3File, err)
 				tx.Rollback()
 			} else {
 				err = tx.Commit()
@@ -59,6 +62,7 @@ func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer) error {
 		// if the request succeeded, or its an unrecoverable error, break out of the loop
 		// because we are done
 		if err == nil || IsRecoverableError(err) == false {
+			l4g.Fine("exiting loop)")
 			break
 		}
 
