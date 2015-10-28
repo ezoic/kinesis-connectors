@@ -41,7 +41,7 @@ func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer) error {
 
 		// handle aws backoff, this may be necessary if, for example, the
 		// s3 file has not appeared to the database yet
-		handleAwsWaitTimeExp(i)
+		HandleAwsWaitTimeExp(i)
 
 		tx, err := e.Db.Begin()
 		if err == nil {
@@ -58,7 +58,7 @@ func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer) error {
 
 		// if the request succeeded, or its an unrecoverable error, break out of the loop
 		// because we are done
-		if err == nil || isRecoverableError(err) == false {
+		if err == nil || IsRecoverableError(err) == false {
 			break
 		}
 

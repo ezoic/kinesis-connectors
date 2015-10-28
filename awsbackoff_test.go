@@ -34,7 +34,7 @@ func Test_isRecoverableError(t *testing.T) {
 
 	for idx, tc := range testCases {
 
-		isRecoverable := isRecoverableError(tc.err)
+		isRecoverable := IsRecoverableError(tc.err)
 		if isRecoverable != tc.isRecoverable {
 			t.Errorf("test case %d: isRecoverable expected %t, actual %t, for error %+v", idx, tc.isRecoverable, isRecoverable, tc.err)
 		}

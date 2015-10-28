@@ -74,7 +74,7 @@ var isRecoverableErrors = []isRecoverableErrorFunc{
 }
 
 // this determines whether the error is recoverable
-func isRecoverableError(err error) bool {
+func IsRecoverableError(err error) bool {
 	r := false
 
 	l4g.Debug("isRecoverableError, type %s, value (%#v)\n", reflect.TypeOf(err).String(), err)
@@ -90,7 +90,7 @@ func isRecoverableError(err error) bool {
 }
 
 // handle the aws exponential backoff
-func handleAwsWaitTimeExp(attempts int) {
+func HandleAwsWaitTimeExp(attempts int) {
 
 	//http://docs.aws.amazon.com/general/latest/gr/api-retries.html
 	// wait up to 5 minutes based on the aws exponential backoff algorithm

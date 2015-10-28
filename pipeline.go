@@ -54,14 +54,14 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 		}
 
 		// handle the aws backoff stuff
-		handleAwsWaitTimeExp(consecutiveErrorAttempts)
+		HandleAwsWaitTimeExp(consecutiveErrorAttempts)
 
 		args = kinesis.NewArgs()
 		args.Add("ShardIterator", shardIterator)
 		recordSet, err := ksis.GetRecords(args)
 
 		if err != nil {
-			if isRecoverableError(err) {
+			if IsRecoverableError(err) {
 				consecutiveErrorAttempts++
 				l4g.Debug("recoverable error, %s (%d)", err, consecutiveErrorAttempts)
 				continue
