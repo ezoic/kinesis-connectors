@@ -44,15 +44,18 @@ func Test_MysqlSetCheckpoint(t *testing.T) {
 	c := MysqlCheckpoint{AppName: "app", StreamName: "stream", TableName: "KinesisConnector.TestCheckpoint", Db: rc}
 	c.SetCheckpoint("shard", "fakeSeqNum")
 
-	rslt := rc.QueryRow("SELECT sequence_number FROM KinesisConnector.TestCheckpoint WHERE checkpoint_key = ?", k)
-	var sequenceNumber string
-	err := rslt.Scan(&sequenceNumber)
+	rslt := rc.QueryRow("SELECT sequence_number, last_updated FROM KinesisConnector.TestCheckpoint WHERE checkpoint_key = ?", k)
+	var sequenceNumber, lastUpdated string
+	err := rslt.Scan(&sequenceNumber, &lastUpdated)
 	if err != nil {
 		t.Fatalf("cannot scan row for checkpoint key, %s", err)
 	}
 
 	if sequenceNumber != "fakeSeqNum" {
 		t.Errorf("SetCheckpoint() = %v, want %v", "fakeSeqNum", sequenceNumber)
+	}
+	if lastUpdated == "" {
+		t.Error("last_updated is empty")
 	}
 
 	rc.Exec("DELETE FROM KinesisConnector.TestCheckpoint WHERE checkpoint_key = ?", k)

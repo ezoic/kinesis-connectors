@@ -52,7 +52,7 @@ func (e S3Emitter) Emit(b Buffer, t Transformer) error {
 		l4g.Error("S3Put ERROR: %v", err)
 		return err
 	} else {
-		l4g.Info("[%v] records emitted to [%s]", b.NumRecordsInBuffer(), e.S3Bucket)
+		l4g.Info("[%v] records emitted to [%s][%s]", b.NumRecordsInBuffer(), e.S3Bucket, s3File)
 	}
 	return nil
 }

@@ -3,6 +3,7 @@ package connector
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	l4g "github.com/ezoic/log4go"
 	_ "github.com/go-sql-driver/mysql"
@@ -52,7 +53,9 @@ func (c *MysqlCheckpoint) SequenceNumber() string {
 // Upon failover, record processing is resumed from this point.
 func (c *MysqlCheckpoint) SetCheckpoint(shardID string, sequenceNumber string) {
 
-	_, err := c.Db.Exec("INSERT INTO "+c.TableName+" (sequence_number, checkpoint_key) VALUES (?, ?) ON DUPLICATE KEY UPDATE sequence_number = ?", sequenceNumber, c.key(shardID), sequenceNumber)
+	dtString := time.Now().Format("2006-01-02 15:04:05")
+
+	_, err := c.Db.Exec("INSERT INTO "+c.TableName+" (sequence_number, checkpoint_key, last_updated) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE sequence_number = ?, last_updated = ?", sequenceNumber, c.key(shardID), dtString, sequenceNumber, dtString)
 	if err != nil {
 		panic(err)
 	}
