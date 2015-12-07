@@ -46,7 +46,24 @@ func (e S3Emitter) Emit(b Buffer, t Transformer) error {
 		buffer.Write(s)
 	}
 
-	err := bucket.Put(s3File, buffer.Bytes(), "text/plain", s3.Private, s3.Options{})
+	var err error
+	for i := 0; i < 10; i++ {
+
+		// handle aws backoff, this may be necessary if, for example, the
+		// s3 file has not appeared to the database yet
+		HandleAwsWaitTimeExp(i)
+
+		err = bucket.Put(s3File, buffer.Bytes(), "text/plain", s3.Private, s3.Options{})
+
+		if err == nil || IsRecoverableError(err) == false {
+			l4g.Fine("exiting loop")
+			break
+		}
+
+		// recoverable error, lets warn
+		l4g.Warn(err)
+
+	}
 
 	if err != nil {
 		l4g.Error("S3Put ERROR: %v", err)

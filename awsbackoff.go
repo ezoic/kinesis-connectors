@@ -1,6 +1,7 @@
 package connector
 
 import (
+	"io"
 	"math"
 	"net"
 	"net/url"
@@ -45,9 +46,14 @@ func netIsRecoverableError(err error) bool {
 		"connection reset by peer": true,
 	}
 	r := false
-	cErr, ok := err.(*net.OpError)
-	if ok && recoverableErrors[cErr.Err.Error()] == true {
+
+	if err == io.EOF {
 		r = true
+	} else {
+		cErr, ok := err.(*net.OpError)
+		if ok && recoverableErrors[cErr.Err.Error()] == true {
+			r = true
+		}
 	}
 	return r
 }
