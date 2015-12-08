@@ -1,7 +1,9 @@
 package connector
 
 import (
+	"fmt"
 	"log"
+	"reflect"
 	"time"
 
 	"github.com/ezoic/go-kinesis"
@@ -26,6 +28,30 @@ type Pipeline struct {
 // ProcessShard kicks off the process of a Kinesis Shard.
 // It is a long running process that will continue to read from the shard.
 func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
+
+	expiredIteratorCount := 0
+
+	for true {
+
+		err := p.processShardInternal(ksis, shardID, &expiredIteratorCount)
+		if err == nil {
+			l4g.Warn("returned nil from processShardInternal, this should never happen")
+		} else if kerr, ok := err.(*kinesis.Error); ok && kerr.Code == "ExpiredIteratorException" {
+			expiredIteratorCount++
+			if expiredIteratorCount < 10 {
+				l4g.Warn("expired iterator count %d: %v", expiredIteratorCount, kerr)
+			} else {
+				log.Fatalf("ProcessShared ERROR too many expired iterators: %v\n", err)
+			}
+		} else {
+			log.Fatalf("ProcessShared ERROR: %v\n", err)
+		}
+	}
+
+}
+
+func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, expiredIteratorCount *int) error {
+
 	args := kinesis.NewArgs()
 	args.Add("ShardId", shardID)
 	args.Add("StreamName", p.StreamName)
@@ -63,23 +89,19 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 		if err != nil {
 			if IsRecoverableError(err) {
 				consecutiveErrorAttempts++
-				l4g.Debug("recoverable error, %s (%d)", err, consecutiveErrorAttempts)
+				l4g.Warn("recoverable error, %s (%d) type=%v", err, consecutiveErrorAttempts, reflect.TypeOf(err).String())
 				continue
 			} else {
-				log.Fatalf("GetRecords ERROR: %v\n", err)
+				return err
 			}
 		} else {
 			consecutiveErrorAttempts = 0
+			*expiredIteratorCount = 0
 		}
 
 		if len(recordSet.Records) > 0 {
 			for _, v := range recordSet.Records {
 				data := v.GetData()
-
-				if err != nil {
-					l4g.Error("GetData ERROR: %v\n", err)
-					continue
-				}
 
 				r := p.Transformer.ToRecord(data)
 
@@ -89,9 +111,8 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 					p.Buffer.ProcessRecord(nil, v.SequenceNumber)
 				}
 			}
-		} else if recordSet.NextShardIterator == "" || shardIterator == recordSet.NextShardIterator || err != nil {
-			l4g.Error("NextShardIterator ERROR: %v", err)
-			break
+		} else if recordSet.NextShardIterator == "" || shardIterator == recordSet.NextShardIterator {
+			return fmt.Errorf("NextShardIterator ERROR: %v", recordSet.NextShardIterator)
 		} else {
 			time.Sleep(5 * time.Second)
 		}
@@ -100,7 +121,7 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 			if p.Buffer.NumRecordsInBuffer() > 0 {
 				err := p.Emitter.Emit(p.Buffer, p.Transformer)
 				if err != nil {
-					log.Fatal(err)
+					return err
 				}
 			}
 			p.Checkpoint.SetCheckpoint(shardID, p.Buffer.LastSequenceNumber())
@@ -109,4 +130,6 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 
 		shardIterator = recordSet.NextShardIterator
 	}
+
+	return nil
 }

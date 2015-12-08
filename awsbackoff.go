@@ -4,11 +4,14 @@ import (
 	"io"
 	"math"
 	"net"
+	"net/http"
 	"net/url"
 	"reflect"
 	"regexp"
+	"strings"
 	"time"
 
+	"github.com/AdRoll/goamz/s3"
 	"github.com/ezoic/go-kinesis"
 	l4g "github.com/ezoic/log4go"
 	"github.com/lib/pq"
@@ -26,7 +29,7 @@ func kinesisIsRecoverableError(err error) bool {
 	}
 	r := false
 	cErr, ok := err.(*kinesis.Error)
-	if ok && recoverableErrorCodes[cErr.Code] == true {
+	if ok && (recoverableErrorCodes[cErr.Code] == true || cErr.StatusCode == http.StatusInternalServerError) {
 		r = true
 	}
 	return r
@@ -48,6 +51,8 @@ func netIsRecoverableError(err error) bool {
 	r := false
 
 	if err == io.EOF {
+		r = true
+	} else if strings.Contains(err.Error(), "connection reset by peer") {
 		r = true
 	} else {
 		cErr, ok := err.(*net.OpError)
@@ -75,8 +80,24 @@ func redshiftIsRecoverableError(err error) bool {
 	return r
 }
 
+func s3IsRecoverableError(err error) bool {
+	recoverableErrorCodes := map[string]bool{
+		"ProvisionedThroughputExceededException": true,
+		"InternalFailure":                        true,
+		"Throttling":                             true,
+		"ServiceUnavailable":                     true,
+		//"ExpiredIteratorException":               true,
+	}
+	r := false
+	cErr, ok := err.(*s3.Error)
+	if ok && (recoverableErrorCodes[cErr.Code] == true || cErr.StatusCode == http.StatusInternalServerError) {
+		r = true
+	}
+	return r
+}
+
 var isRecoverableErrors = []isRecoverableErrorFunc{
-	kinesisIsRecoverableError, netIsRecoverableError, urlIsRecoverableError, redshiftIsRecoverableError,
+	kinesisIsRecoverableError, netIsRecoverableError, urlIsRecoverableError, redshiftIsRecoverableError, s3IsRecoverableError,
 }
 
 // this determines whether the error is recoverable
