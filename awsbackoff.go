@@ -96,17 +96,18 @@ func s3IsRecoverableError(err error) bool {
 	return r
 }
 
-func pqIsRecoverableError(err error) bool {
+func sqlIsRecoverableError(err error) bool {
 	r := false
-	pErr, ok := err.(pq.Error)
-	if ok && strings.Contains(pErr.Error(), "current transaction is aborted") {
+
+	if strings.Contains(err.Error(), "current transaction is aborted") {
 		r = true
 	}
+
 	return r
 }
 
 var isRecoverableErrors = []isRecoverableErrorFunc{
-	kinesisIsRecoverableError, netIsRecoverableError, urlIsRecoverableError, redshiftIsRecoverableError, s3IsRecoverableError, pqIsRecoverableError,
+	kinesisIsRecoverableError, netIsRecoverableError, urlIsRecoverableError, redshiftIsRecoverableError, s3IsRecoverableError, sqlIsRecoverableError,
 }
 
 // this determines whether the error is recoverable
