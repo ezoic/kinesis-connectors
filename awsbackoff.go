@@ -80,6 +80,7 @@ func redshiftIsRecoverableError(err error) bool {
 func s3IsRecoverableError(err error) bool {
 	recoverableErrorCodes := map[string]bool{
 		"ProvisionedThroughputExceededException": true,
+		"InternalError":                          true,
 		"InternalFailure":                        true,
 		"Throttling":                             true,
 		"ServiceUnavailable":                     true,
