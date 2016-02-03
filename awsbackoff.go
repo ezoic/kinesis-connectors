@@ -14,7 +14,6 @@ import (
 	"github.com/AdRoll/goamz/s3"
 	"github.com/ezoic/go-kinesis"
 	l4g "github.com/ezoic/log4go"
-	"github.com/lib/pq"
 )
 
 type isRecoverableErrorFunc func(error) bool
@@ -69,12 +68,10 @@ var redshiftRecoverableErrors = []*regexp.Regexp{
 
 func redshiftIsRecoverableError(err error) bool {
 	r := false
-	if cErr, ok := err.(pq.Error); ok {
-		for _, re := range redshiftRecoverableErrors {
-			if re.MatchString(cErr.Message) {
-				r = true
-				break
-			}
+	for _, re := range redshiftRecoverableErrors {
+		if re.MatchString(err.Error()) {
+			r = true
+			break
 		}
 	}
 	return r

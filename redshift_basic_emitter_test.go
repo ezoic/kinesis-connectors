@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/stdlib"
 )
 
 func TestCopyStatement(t *testing.T) {
@@ -27,7 +27,7 @@ func TestCopyStatement(t *testing.T) {
 
 func Test_WriteInvalidDataToTable(t *testing.T) {
 
-	db, err := sql.Open("postgres", os.Getenv("REDSHIFT_URL"))
+	db, err := sql.Open("pgx", os.Getenv("REDSHIFT_URL"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func Test_WriteInvalidDataToTable(t *testing.T) {
 
 func Test_WriteValidDataToTable(t *testing.T) {
 
-	db, err := sql.Open("postgres", os.Getenv("REDSHIFT_URL"))
+	db, err := sql.Open("pgx", os.Getenv("REDSHIFT_URL"))
 	if err != nil {
 		t.Fatal(err)
 	}

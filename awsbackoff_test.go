@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/ezoic/go-kinesis"
-	"github.com/lib/pq"
 )
 
 func Test_isRecoverableError(t *testing.T) {
@@ -22,8 +21,8 @@ func Test_isRecoverableError(t *testing.T) {
 		{err: &net.OpError{Err: fmt.Errorf("connection reset by peer")}, isRecoverable: true},
 		{err: &net.OpError{Err: fmt.Errorf("unexpected error")}, isRecoverable: false},
 		{err: fmt.Errorf("an arbitrary error"), isRecoverable: false},
-		{err: pq.Error{Message: "The specified S3 prefix 'somefilethatismissing' does not exist"}, isRecoverable: true},
-		{err: pq.Error{Message: "Some other pq error"}, isRecoverable: false},
+		{err: fmt.Errorf("The specified S3 prefix 'somefilethatismissing' does not exist"), isRecoverable: true},
+		{err: fmt.Errorf("Some other pq error"), isRecoverable: false},
 
 		//"InternalFailure":                        true,
 		//"Throttling":                             true,

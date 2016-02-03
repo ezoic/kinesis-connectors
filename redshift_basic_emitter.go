@@ -8,7 +8,7 @@ import (
 
 	// Postgres package is used when sql.Open is called
 	l4g "github.com/ezoic/log4go"
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/stdlib"
 )
 
 // RedshiftEmitter is an implementation of Emitter that buffered batches of records into Redshift one by one.

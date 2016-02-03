@@ -111,7 +111,10 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 					p.Buffer.ProcessRecord(nil, v.SequenceNumber)
 				}
 			}
-		} else if recordSet.NextShardIterator == "" || shardIterator == recordSet.NextShardIterator {
+		} else if recordSet.NextShardIterator == "" {
+			l4g.Info("stream %v, shard %v has returned an empty NextShardIterator.  this indicates that it is closed.")
+			return nil
+		} else if shardIterator == recordSet.NextShardIterator {
 			return fmt.Errorf("NextShardIterator ERROR: %v", recordSet.NextShardIterator)
 		} else {
 			time.Sleep(5 * time.Second)

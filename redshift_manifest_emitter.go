@@ -12,7 +12,7 @@ import (
 	"github.com/crowdmob/goamz/aws"
 	"github.com/crowdmob/goamz/s3"
 	l4g "github.com/ezoic/log4go"
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx"
 )
 
 // An implementation of Emitter that reads S3 file paths from a stream, creates a
@@ -32,7 +32,7 @@ type RedshiftManifestEmitter struct {
 // Invoked when the buffer is full.
 // Emits a Manifest file to S3 and then performs the Redshift copy command.
 func (e RedshiftManifestEmitter) Emit(b Buffer, t Transformer) error {
-	db, err := sql.Open("postgres", os.Getenv("REDSHIFT_URL"))
+	db, err := sql.Open("pgx", os.Getenv("REDSHIFT_URL"))
 
 	if err != nil {
 		return err
