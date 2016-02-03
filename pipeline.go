@@ -35,7 +35,8 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 
 		err := p.processShardInternal(ksis, shardID, &expiredIteratorCount)
 		if err == nil {
-			l4g.Warn("returned nil from processShardInternal, this should never happen")
+			l4g.Info("stream %v, shard %v has been closed", p.StreamName, shardID)
+			return
 		} else if kerr, ok := err.(*kinesis.Error); ok && kerr.Code == "ExpiredIteratorException" {
 			expiredIteratorCount++
 			if expiredIteratorCount < 10 {
@@ -112,7 +113,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 				}
 			}
 		} else if recordSet.NextShardIterator == "" {
-			l4g.Info("stream %v, shard %v has returned an empty NextShardIterator.  this indicates that it is closed.")
+			l4g.Debug("stream %v, shard %v has returned an empty NextShardIterator.  this indicates that it is closed.", p.StreamName, shardID)
 			return nil
 		} else if shardIterator == recordSet.NextShardIterator {
 			return fmt.Errorf("NextShardIterator ERROR: %v", recordSet.NextShardIterator)
