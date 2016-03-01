@@ -46,7 +46,7 @@ func Test_WriteInvalidDataToTable(t *testing.T) {
 	buffer := &RecordBuffer{NumRecordsToBuffer: 1}
 	buffer.ProcessRecord("{\"id\":1234,\"thiscoldoesnotexist\":789}", "11111111111111")
 
-	err = emitter.Emit(buffer, transformer)
+	err = emitter.Emit(buffer, transformer, "shardId-000000000002")
 	if err == nil {
 		t.Fatal("expected an error from invalid input")
 	}
@@ -74,7 +74,7 @@ func Test_WriteValidDataToTable(t *testing.T) {
 	buffer := &RecordBuffer{NumRecordsToBuffer: 1}
 	buffer.ProcessRecord("{\"id\":1234,\"value\":\"danisawesome\"}", "11111111111111")
 
-	err = emitter.Emit(buffer, transformer)
+	err = emitter.Emit(buffer, transformer, "shardId-000000000002")
 	if err != nil {
 		t.Fatalf("got an error from valid input, %s", err)
 	}

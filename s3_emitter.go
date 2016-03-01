@@ -33,7 +33,7 @@ func (e S3Emitter) S3FileName(firstSeq string, lastSeq string) string {
 }
 
 // Emit is invoked when the buffer is full. This method emits the set of filtered records.
-func (e S3Emitter) Emit(b Buffer, t Transformer) error {
+func (e S3Emitter) Emit(b Buffer, t Transformer, shardID string) error {
 	auth, _ := aws.EnvAuth()
 	s3Con := s3.New(auth, aws.USEast)
 	bucket := s3Con.Bucket(e.S3Bucket)
@@ -51,7 +51,7 @@ func (e S3Emitter) Emit(b Buffer, t Transformer) error {
 
 		// handle aws backoff, this may be necessary if, for example, the
 		// s3 file has not appeared to the database yet
-		HandleAwsWaitTimeExp(i)
+		HandleAwsWaitTimeExp(i, "s3 emitter on shard "+shardID)
 
 		err = bucket.Put(s3File, buffer.Bytes(), "text/plain", s3.Private, s3.Options{})
 
@@ -61,7 +61,7 @@ func (e S3Emitter) Emit(b Buffer, t Transformer) error {
 		}
 
 		// recoverable error, lets warn
-		l4g.Warn(err)
+		l4g.Warn("recoverable s3 error %v on shard [%v]", err, shardID)
 
 	}
 
@@ -69,7 +69,7 @@ func (e S3Emitter) Emit(b Buffer, t Transformer) error {
 		l4g.Error("S3Put ERROR: %v", err)
 		return err
 	} else {
-		l4g.Info("[%v] records emitted to [%s][%s]", b.NumRecordsInBuffer(), e.S3Bucket, s3File)
+		l4g.Info("[%v] records emitted to [s3://%v/%v] on shard [%v]", b.NumRecordsInBuffer(), e.S3Bucket, s3File, shardID)
 	}
 	return nil
 }

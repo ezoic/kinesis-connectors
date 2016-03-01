@@ -81,7 +81,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 		}
 
 		// handle the aws backoff stuff
-		HandleAwsWaitTimeExp(consecutiveErrorAttempts)
+		HandleAwsWaitTimeExp(consecutiveErrorAttempts, "shard ID "+shardID)
 
 		args = kinesis.NewArgs()
 		args.Add("ShardIterator", shardIterator)
@@ -123,7 +123,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 
 		if p.Buffer.ShouldFlush() {
 			if p.Buffer.NumRecordsInBuffer() > 0 {
-				err := p.Emitter.Emit(p.Buffer, p.Transformer)
+				err := p.Emitter.Emit(p.Buffer, p.Transformer, shardID)
 				if err != nil {
 					return err
 				}

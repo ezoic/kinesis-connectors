@@ -125,13 +125,13 @@ func IsRecoverableError(err error) bool {
 }
 
 // handle the aws exponential backoff
-func HandleAwsWaitTimeExp(attempts int) {
+func HandleAwsWaitTimeExp(attempts int, infoString string) {
 
 	//http://docs.aws.amazon.com/general/latest/gr/api-retries.html
 	// wait up to 5 minutes based on the aws exponential backoff algorithm
 	if attempts > 0 {
 		waitTime := time.Duration(math.Min(100*math.Pow(2, float64(attempts)), 300000)) * time.Millisecond
-		l4g.Finest("handleAwsWaitTimeExp:%s", waitTime.String())
+		l4g.Info("aws error attempt %v failed for %s, waiting %s", attempts, infoString, waitTime.String())
 		time.Sleep(waitTime)
 	}
 

@@ -26,9 +26,9 @@ type RedshiftBasicEmtitter struct {
 
 // Emit is invoked when the buffer is full. This method leverages the S3Emitter and
 // then issues a copy command to Redshift data store.
-func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer) error {
+func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer, shardID string) error {
 	s3Emitter := S3Emitter{S3Prefix: e.S3Prefix, S3Bucket: e.S3Bucket}
-	s3err := s3Emitter.Emit(b, t)
+	s3err := s3Emitter.Emit(b, t, shardID)
 	if s3err != nil {
 		return s3err
 	}
@@ -41,7 +41,7 @@ func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer) error {
 
 		// handle aws backoff, this may be necessary if, for example, the
 		// s3 file has not appeared to the database yet
-		HandleAwsWaitTimeExp(i)
+		HandleAwsWaitTimeExp(i, "redshift emitter on shard "+shardID)
 
 		var tx *sql.Tx
 		tx, err = e.Db.Begin()
@@ -51,7 +51,7 @@ func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer) error {
 			_, err = tx.Exec(stmt)
 			l4g.Fine("error:%v", err)
 			if err != nil {
-				l4g.Warn("rolling back transaction for insert with file %v, %v", s3File, err)
+				l4g.Warn("rolling back transaction for insert with file %v, %v on shard [%v]", s3File, err, shardID)
 				tx.Rollback()
 			} else {
 				err = tx.Commit()
@@ -62,12 +62,12 @@ func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer) error {
 		// if the request succeeded, or its an unrecoverable error, break out of the loop
 		// because we are done
 		if err == nil || IsRecoverableError(err) == false {
-			l4g.Fine("exiting loop)")
+			l4g.Fine("exiting loop")
 			break
 		}
 
 		// recoverable error, lets warn
-		l4g.Warn(err)
+		l4g.Warn("recoverable redshift error %v on shard [%v]", err, shardID)
 
 	}
 
@@ -75,7 +75,7 @@ func (e RedshiftBasicEmtitter) Emit(b Buffer, t Transformer) error {
 		return err
 	}
 
-	l4g.Debug("Redshift load completed.")
+	l4g.Info("[%v] records emitted to redshift table [%v] for shard [%v]", b.NumRecordsInBuffer(), e.TableName, shardID)
 	return nil
 }
 

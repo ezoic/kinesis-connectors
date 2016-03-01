@@ -31,7 +31,7 @@ type RedshiftManifestEmitter struct {
 
 // Invoked when the buffer is full.
 // Emits a Manifest file to S3 and then performs the Redshift copy command.
-func (e RedshiftManifestEmitter) Emit(b Buffer, t Transformer) error {
+func (e RedshiftManifestEmitter) Emit(b Buffer, t Transformer, shardID string) error {
 	db, err := sql.Open("pgx", os.Getenv("REDSHIFT_URL"))
 
 	if err != nil {
@@ -69,7 +69,7 @@ func (e RedshiftManifestEmitter) Emit(b Buffer, t Transformer) error {
 		return err
 	}
 
-	l4g.Info("[%v] copied to Redshift", manifestFileName)
+	l4g.Info("[%v] copied to Redshift on shard [%v]", manifestFileName, shardID)
 	return nil
 }
 

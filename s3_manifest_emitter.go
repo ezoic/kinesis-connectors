@@ -13,11 +13,11 @@ type S3ManifestEmitter struct {
 	Ksis         *kinesis.Kinesis
 }
 
-func (e S3ManifestEmitter) Emit(b Buffer, t Transformer) error {
+func (e S3ManifestEmitter) Emit(b Buffer, t Transformer, shardID string) error {
 
 	// Emit buffer contents to S3 Bucket
 	s3Emitter := S3Emitter{S3Bucket: e.S3Bucket}
-	s3Emitter.Emit(b, t)
+	s3Emitter.Emit(b, t, shardID)
 	s3File := s3Emitter.S3FileName(b.FirstSequenceNumber(), b.LastSequenceNumber())
 
 	// Emit the file path to Kinesis Output stream
@@ -32,7 +32,7 @@ func (e S3ManifestEmitter) Emit(b Buffer, t Transformer) error {
 		l4g.Error("PutRecord ERROR: %v", err)
 		return err
 	} else {
-		l4g.Info("[%s] emitted to [%s]", b.FirstSequenceNumber(), e.OutputStream)
+		l4g.Info("[%s] emitted to [%s] on shard [%v]", b.FirstSequenceNumber(), e.OutputStream, shardID)
 	}
 	return nil
 }
