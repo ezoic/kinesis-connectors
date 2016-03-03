@@ -43,6 +43,18 @@ func urlIsRecoverableError(err error) bool {
 	return r
 }
 
+func textIsRecoverableError(err error) bool {
+	recoverableErrors := []string{
+		"Client.Timeout exceeded while reading body",
+	}
+	for _, txt := range recoverableErrors {
+		if strings.Contains(err.Error(), txt) {
+			return true
+		}
+	}
+	return false
+}
+
 func netIsRecoverableError(err error) bool {
 	recoverableErrors := map[string]bool{
 		"connection reset by peer": true,
@@ -105,7 +117,7 @@ func sqlIsRecoverableError(err error) bool {
 }
 
 var isRecoverableErrors = []isRecoverableErrorFunc{
-	kinesisIsRecoverableError, netIsRecoverableError, urlIsRecoverableError, redshiftIsRecoverableError, s3IsRecoverableError, sqlIsRecoverableError,
+	kinesisIsRecoverableError, netIsRecoverableError, urlIsRecoverableError, redshiftIsRecoverableError, s3IsRecoverableError, sqlIsRecoverableError, textIsRecoverableError,
 }
 
 // this determines whether the error is recoverable
