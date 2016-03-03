@@ -96,7 +96,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 		if err != nil {
 			if IsRecoverableError(err) {
 				consecutiveErrorAttempts++
-				if consecutiveErrorAttempts > 3 || strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == false {
+				if consecutiveErrorAttempts > 6 || strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == false {
 					l4g.Warn("recoverable error for shard [%v], %s (%d) type=%v", shardID, err, consecutiveErrorAttempts, reflect.TypeOf(err).String())
 				}
 				continue

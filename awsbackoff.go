@@ -143,7 +143,7 @@ func HandleAwsWaitTimeExp(attempts int, infoString string) {
 	// wait up to 5 minutes based on the aws exponential backoff algorithm
 	if attempts > 0 {
 		waitTime := time.Duration(math.Min(100*math.Pow(2, float64(attempts)), 300000)) * time.Millisecond
-		if attempts > 3 {
+		if attempts > 6 {
 			l4g.Info("aws error attempt %v failed for %s, waiting %s", attempts, infoString, waitTime.String())
 		}
 		time.Sleep(waitTime)
