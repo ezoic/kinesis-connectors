@@ -36,6 +36,8 @@ func (e S3Emitter) S3FileName(firstSeq string, lastSeq string) string {
 func (e S3Emitter) Emit(b Buffer, t Transformer, shardID string) error {
 	auth, _ := aws.EnvAuth()
 	s3Con := s3.New(auth, aws.USEast)
+	s3Con.ReadTimeout = time.Second * 300
+	s3Con.ConnectTimeout = time.Second * 10
 	bucket := s3Con.Bucket(e.S3Bucket)
 	s3File := e.S3FileName(b.FirstSequenceNumber(), b.LastSequenceNumber())
 
