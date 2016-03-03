@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/ezoic/go-kinesis"
@@ -77,7 +78,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 	for {
 
 		if consecutiveErrorAttempts > 50 {
-			log.Fatalln("Too many consecutive error attempts")
+			log.Fatalf("Too many consecutive error attempts on shard %v", shardID)
 		}
 
 		// handle the aws backoff stuff
@@ -85,12 +86,19 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 
 		args = kinesis.NewArgs()
 		args.Add("ShardIterator", shardIterator)
+		startTime := time.Now()
 		recordSet, err := ksis.GetRecords(args)
+		getRecordsDuration := time.Now().Sub(startTime)
+		if getRecordsDuration.Seconds() > 30 {
+			l4g.Warn("kinesis request duration [%v] on shard [%v]", getRecordsDuration.String(), shardID)
+		}
 
 		if err != nil {
 			if IsRecoverableError(err) {
 				consecutiveErrorAttempts++
-				l4g.Warn("recoverable error, %s (%d) type=%v", err, consecutiveErrorAttempts, reflect.TypeOf(err).String())
+				if consecutiveErrorAttempts > 3 || strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == false {
+					l4g.Warn("recoverable error for shard [%v], %s (%d) type=%v", shardID, err, consecutiveErrorAttempts, reflect.TypeOf(err).String())
+				}
 				continue
 			} else {
 				return err
