@@ -47,6 +47,7 @@ func textIsRecoverableError(err error) bool {
 	recoverableErrors := []string{
 		"Client.Timeout exceeded while reading body",
 		"was not read from or written to within the timeout period",
+		"Deadlock",
 	}
 	for _, txt := range recoverableErrors {
 		if strings.Contains(err.Error(), txt) {
