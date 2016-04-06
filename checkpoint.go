@@ -6,5 +6,5 @@ package connector
 type Checkpoint interface {
 	CheckpointExists(shardID string) bool
 	SequenceNumber() string
-	SetCheckpoint(shardID string, sequenceNumber string)
+	SetCheckpoint(shardID string, sequenceNumber string, approximateArrivalTime int)
 }

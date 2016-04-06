@@ -2,6 +2,7 @@ package connector
 
 import (
 	"testing"
+	"time"
 
 	"github.com/hoisie/redis"
 )
@@ -36,7 +37,7 @@ func TestSetCheckpoint(t *testing.T) {
 	k := "app:checkpoint:stream:shard"
 	var rc redis.Client
 	c := RedisCheckpoint{AppName: "app", StreamName: "stream"}
-	c.SetCheckpoint("shard", "fakeSeqNum")
+	c.SetCheckpoint("shard", "fakeSeqNum", int(time.Now().Unix()))
 
 	r, _ := rc.Get(k)
 

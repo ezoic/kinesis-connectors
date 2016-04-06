@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	_ "github.com/jackc/pgx/stdlib"
 )
@@ -44,7 +45,7 @@ func Test_WriteInvalidDataToTable(t *testing.T) {
 	}
 	transformer := StringToStringTransformer{}
 	buffer := &RecordBuffer{NumRecordsToBuffer: 1}
-	buffer.ProcessRecord("{\"id\":1234,\"thiscoldoesnotexist\":789}", "11111111111111")
+	buffer.ProcessRecord("{\"id\":1234,\"thiscoldoesnotexist\":789}", "11111111111111", int(time.Now().Unix()))
 
 	err = emitter.Emit(buffer, transformer, "shardId-000000000002")
 	if err == nil {
@@ -72,7 +73,7 @@ func Test_WriteValidDataToTable(t *testing.T) {
 	}
 	transformer := StringToStringTransformer{}
 	buffer := &RecordBuffer{NumRecordsToBuffer: 1}
-	buffer.ProcessRecord("{\"id\":1234,\"value\":\"danisawesome\"}", "11111111111111")
+	buffer.ProcessRecord("{\"id\":1234,\"value\":\"danisawesome\"}", "11111111111111", int(time.Now().Unix()))
 
 	err = emitter.Emit(buffer, transformer, "shardId-000000000002")
 	if err != nil {

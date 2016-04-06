@@ -37,7 +37,7 @@ func (c *RedisCheckpoint) SequenceNumber() string {
 
 // SetCheckpoint stores a checkpoint for a shard (e.g. sequence number of last record processed by application).
 // Upon failover, record processing is resumed from this point.
-func (c *RedisCheckpoint) SetCheckpoint(shardID string, sequenceNumber string) {
+func (c *RedisCheckpoint) SetCheckpoint(shardID string, sequenceNumber string, approximateArrivalTime int) {
 	c.client.Set(c.key(shardID), []byte(sequenceNumber))
 	c.sequenceNumber = sequenceNumber
 }

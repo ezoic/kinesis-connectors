@@ -51,11 +51,11 @@ func (c *MysqlCheckpoint) SequenceNumber() string {
 
 // SetCheckpoint stores a checkpoint for a shard (e.g. sequence number of last record processed by application).
 // Upon failover, record processing is resumed from this point.
-func (c *MysqlCheckpoint) SetCheckpoint(shardID string, sequenceNumber string) {
+func (c *MysqlCheckpoint) SetCheckpoint(shardID string, sequenceNumber string, approximateArrivalTime int) {
 
 	dtString := time.Now().Format("2006-01-02 15:04:05")
 
-	_, err := c.Db.Exec("INSERT INTO "+c.TableName+" (sequence_number, checkpoint_key, last_updated) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE sequence_number = ?, last_updated = ?", sequenceNumber, c.key(shardID), dtString, sequenceNumber, dtString)
+	_, err := c.Db.Exec("INSERT INTO "+c.TableName+" (sequence_number, checkpoint_key, last_updated, last_arrival_time) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE sequence_number = VALUES(sequence_number), last_updated = VALUES(last_updated), last_arrival_time = VALUES(last_arrival_time)", sequenceNumber, c.key(shardID), dtString, approximateArrivalTime)
 	if err != nil {
 		panic(err)
 	}

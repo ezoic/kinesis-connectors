@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"os"
 	"testing"
+	"time"
 )
 
 func Test_MysqlKey(t *testing.T) {
@@ -41,12 +42,15 @@ func Test_MysqlSetCheckpoint(t *testing.T) {
 
 	rc, _ := sql.Open("mysql", os.Getenv("CHECKPOINT_MYSQL_DSN"))
 
-	c := MysqlCheckpoint{AppName: "app", StreamName: "stream", TableName: "KinesisConnector.TestCheckpoint", Db: rc}
-	c.SetCheckpoint("shard", "fakeSeqNum")
+	approximateArrivalTime := int(time.Now().Unix())
 
-	rslt := rc.QueryRow("SELECT sequence_number, last_updated FROM KinesisConnector.TestCheckpoint WHERE checkpoint_key = ?", k)
+	c := MysqlCheckpoint{AppName: "app", StreamName: "stream", TableName: "KinesisConnector.TestCheckpoint", Db: rc}
+	c.SetCheckpoint("shard", "fakeSeqNum", approximateArrivalTime)
+
+	rslt := rc.QueryRow("SELECT sequence_number, last_updated, last_arrival_time FROM KinesisConnector.TestCheckpoint WHERE checkpoint_key = ?", k)
 	var sequenceNumber, lastUpdated string
-	err := rslt.Scan(&sequenceNumber, &lastUpdated)
+	var lastArrivalTime int
+	err := rslt.Scan(&sequenceNumber, &lastUpdated, &lastArrivalTime)
 	if err != nil {
 		t.Fatalf("cannot scan row for checkpoint key, %s", err)
 	}
@@ -56,6 +60,9 @@ func Test_MysqlSetCheckpoint(t *testing.T) {
 	}
 	if lastUpdated == "" {
 		t.Error("last_updated is empty")
+	}
+	if lastArrivalTime != approximateArrivalTime {
+		t.Errorf("last_arrival_time expected %v, actual %v", approximateArrivalTime, lastArrivalTime)
 	}
 
 	rc.Exec("DELETE FROM KinesisConnector.TestCheckpoint WHERE checkpoint_key = ?", k)

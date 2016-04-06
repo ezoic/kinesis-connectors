@@ -115,9 +115,9 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 				r := p.Transformer.ToRecord(data)
 
 				if p.Filter.KeepRecord(r) {
-					p.Buffer.ProcessRecord(r, v.SequenceNumber)
+					p.Buffer.ProcessRecord(r, v.SequenceNumber, int(v.ApproximateArrivalTimestamp))
 				} else if p.CheckpointFilteredRecords {
-					p.Buffer.ProcessRecord(nil, v.SequenceNumber)
+					p.Buffer.ProcessRecord(nil, v.SequenceNumber, int(v.ApproximateArrivalTimestamp))
 				}
 			}
 		} else if recordSet.NextShardIterator == "" {
@@ -137,7 +137,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 					return err
 				}
 			}
-			p.Checkpoint.SetCheckpoint(shardID, p.Buffer.LastSequenceNumber())
+			p.Checkpoint.SetCheckpoint(shardID, p.Buffer.LastSequenceNumber(), p.Buffer.LastApproximateArrivalTime())
 			p.Buffer.Flush()
 		}
 

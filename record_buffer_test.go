@@ -1,6 +1,9 @@
 package connector
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 type TestRecord struct{}
 
@@ -17,19 +20,19 @@ func TestProcessRecord(t *testing.T) {
 	var r2, s2 = TestRecord{}, "Seq2"
 
 	b := RecordBuffer{}
-	b.ProcessRecord(r1, s1)
+	b.ProcessRecord(r1, s1, int(time.Now().Unix()))
 
 	if b.NumRecordsInBuffer() != 1 {
 		t.Errorf("NumRecordsInBuffer() want %v", 1)
 	}
 
-	b.ProcessRecord(r2, s2)
+	b.ProcessRecord(r2, s2, int(time.Now().Unix()))
 
 	if b.NumRecordsInBuffer() != 2 {
 		t.Errorf("NumRecordsInBuffer() want %v", 2)
 	}
 
-	b.ProcessRecord(r2, s2)
+	b.ProcessRecord(r2, s2, int(time.Now().Unix()))
 
 	if b.NumRecordsInBuffer() != 2 {
 		t.Errorf("NumRecordsInBuffer() want %v", 2)
@@ -41,13 +44,13 @@ func TestSequenceExists(t *testing.T) {
 	var r2, s2 = TestRecord{}, "Seq2"
 
 	b := RecordBuffer{}
-	b.ProcessRecord(r1, s1)
+	b.ProcessRecord(r1, s1, int(time.Now().Unix()))
 
 	if b.sequenceExists(s1) != true {
 		t.Errorf("sequenceExists() want %v", true)
 	}
 
-	b.ProcessRecord(r2, s2)
+	b.ProcessRecord(r2, s2, int(time.Now().Unix()))
 
 	if b.sequenceExists(s2) != true {
 		t.Errorf("sequenceExists() want %v", true)
@@ -57,7 +60,7 @@ func TestSequenceExists(t *testing.T) {
 func TestFlush(t *testing.T) {
 	var r1, s1 = TestRecord{}, "SeqNum"
 	b := RecordBuffer{}
-	b.ProcessRecord(r1, s1)
+	b.ProcessRecord(r1, s1, int(time.Now().Unix()))
 
 	b.Flush()
 
@@ -71,13 +74,13 @@ func TestLastSequenceNumber(t *testing.T) {
 	var r2, s2 = TestRecord{}, "Seq2"
 
 	b := RecordBuffer{}
-	b.ProcessRecord(r1, s1)
+	b.ProcessRecord(r1, s1, int(time.Now().Unix()))
 
 	if b.LastSequenceNumber() != s1 {
 		t.Errorf("LastSequenceNumber() want %v", s1)
 	}
 
-	b.ProcessRecord(r2, s2)
+	b.ProcessRecord(r2, s2, int(time.Now().Unix()))
 
 	if b.LastSequenceNumber() != s2 {
 		t.Errorf("LastSequenceNumber() want %v", s2)
@@ -89,13 +92,13 @@ func TestFirstSequenceNumber(t *testing.T) {
 	var r2, s2 = TestRecord{}, "Seq2"
 
 	b := RecordBuffer{}
-	b.ProcessRecord(r1, s1)
+	b.ProcessRecord(r1, s1, int(time.Now().Unix()))
 
 	if b.FirstSequenceNumber() != s1 {
 		t.Errorf("FirstSequenceNumber() want %v", s1)
 	}
 
-	b.ProcessRecord(r2, s2)
+	b.ProcessRecord(r2, s2, int(time.Now().Unix()))
 
 	if b.FirstSequenceNumber() != s1 {
 		t.Errorf("FirstSequenceNumber() want %v", s1)
@@ -108,13 +111,13 @@ func TestShouldFlush(t *testing.T) {
 	var r2, s2 = TestRecord{}, "Seq2"
 
 	b := RecordBuffer{NumRecordsToBuffer: n}
-	b.ProcessRecord(r1, s1)
+	b.ProcessRecord(r1, s1, int(time.Now().Unix()))
 
 	if b.ShouldFlush() != false {
 		t.Errorf("ShouldFlush() want %v", false)
 	}
 
-	b.ProcessRecord(r2, s2)
+	b.ProcessRecord(r2, s2, int(time.Now().Unix()))
 
 	if b.ShouldFlush() != true {
 		t.Errorf("ShouldFlush() want %v", true)

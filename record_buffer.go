@@ -5,8 +5,9 @@ import "time"
 // RecordBuffer is a basic implementation of the Buffer interface.
 // It buffer's records and answers questions on when it should be periodically flushed.
 type RecordBuffer struct {
-	NumRecordsToBuffer  int
-	MaxTimeBetweenFlush time.Duration
+	NumRecordsToBuffer         int
+	MaxTimeBetweenFlush        time.Duration
+	lastApproximateArrivalTime int
 
 	lastFlush           time.Time
 	firstSequenceNumber string
@@ -16,7 +17,7 @@ type RecordBuffer struct {
 }
 
 // ProcessRecord adds a message to the buffer.
-func (b *RecordBuffer) ProcessRecord(record interface{}, sequenceNumber string) {
+func (b *RecordBuffer) ProcessRecord(record interface{}, sequenceNumber string, approximateArrivalTime int) {
 	if b.lastFlush.IsZero() {
 		b.lastFlush = time.Now()
 	}
@@ -26,6 +27,7 @@ func (b *RecordBuffer) ProcessRecord(record interface{}, sequenceNumber string) 
 	}
 
 	b.lastSequenceNumber = sequenceNumber
+	b.lastApproximateArrivalTime = approximateArrivalTime
 
 	if !b.sequenceExists(sequenceNumber) {
 		if record != nil {
@@ -82,4 +84,8 @@ func (b *RecordBuffer) FirstSequenceNumber() string {
 // LastSequenceNumber returns the sequence number of the last message in the buffer.
 func (b *RecordBuffer) LastSequenceNumber() string {
 	return b.lastSequenceNumber
+}
+
+func (b *RecordBuffer) LastApproximateArrivalTime() int {
+	return b.lastApproximateArrivalTime
 }
