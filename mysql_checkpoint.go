@@ -16,6 +16,7 @@ type MysqlCheckpoint struct {
 	StreamName string
 	TableName  string
 	Db         *sql.DB
+	ServerId   string
 
 	sequenceNumber string
 }
@@ -55,7 +56,7 @@ func (c *MysqlCheckpoint) SetCheckpoint(shardID string, sequenceNumber string, a
 
 	dtString := time.Now().Format("2006-01-02 15:04:05")
 
-	_, err := c.Db.Exec("INSERT INTO "+c.TableName+" (sequence_number, checkpoint_key, last_updated, last_arrival_time) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE sequence_number = VALUES(sequence_number), last_updated = VALUES(last_updated), last_arrival_time = VALUES(last_arrival_time)", sequenceNumber, c.key(shardID), dtString, approximateArrivalTime)
+	_, err := c.Db.Exec("INSERT INTO "+c.TableName+" (sequence_number, checkpoint_key, last_updated, last_arrival_time, server_id) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE sequence_number = VALUES(sequence_number), last_updated = VALUES(last_updated), last_arrival_time = VALUES(last_arrival_time)", sequenceNumber, c.key(shardID), dtString, approximateArrivalTime, c.ServerId)
 	if err != nil {
 		panic(err)
 	}
