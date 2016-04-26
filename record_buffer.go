@@ -13,7 +13,7 @@ type RecordBuffer struct {
 	firstSequenceNumber string
 	lastSequenceNumber  string
 	recordsInBuffer     []interface{}
-	sequencesInBuffer   []string
+	sequencesInBuffer   SequenceList
 }
 
 // ProcessRecord adds a message to the buffer.
@@ -33,7 +33,7 @@ func (b *RecordBuffer) ProcessRecord(record interface{}, sequenceNumber string, 
 		if record != nil {
 			b.recordsInBuffer = append(b.recordsInBuffer, record)
 		}
-		b.sequencesInBuffer = append(b.sequencesInBuffer, sequenceNumber)
+		b.sequencesInBuffer = b.sequencesInBuffer.Append(sequenceNumber)
 	}
 }
 
@@ -56,12 +56,10 @@ func (b *RecordBuffer) Flush() {
 
 // Checks if the sequence already exists in the buffer.
 func (b *RecordBuffer) sequenceExists(sequenceNumber string) bool {
-	for _, v := range b.sequencesInBuffer {
-		if v == sequenceNumber {
-			return true
-		}
+	if b.sequencesInBuffer == nil {
+		b.sequencesInBuffer = make(SequenceList, 0)
 	}
-	return false
+	return b.sequencesInBuffer.SequenceExists(sequenceNumber)
 }
 
 // ShouldFlush determines if the buffer has reached its target size.
