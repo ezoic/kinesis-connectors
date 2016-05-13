@@ -37,10 +37,10 @@ func Test_MysqlCheckpointExists(t *testing.T) {
 	approximateArrivalTime := int(time.Now().Unix())
 	c.SetCheckpoint("shard", "fakeSeqNum", approximateArrivalTime)
 
-	rslt := rc.QueryRow("SELECT sequence_number, last_updated, last_arrival_time, server_id FROM KinesisConnector.TestCheckpoint WHERE checkpoint_key = ?", k)
+	rslt := rc.QueryRow("SELECT sequence_number, last_updated, last_arrival_time, server_id, is_closed FROM KinesisConnector.TestCheckpoint WHERE checkpoint_key = ?", k)
 	var sequenceNumber, lastUpdated, serverId string
-	var lastArrivalTime int
-	err = rslt.Scan(&sequenceNumber, &lastUpdated, &lastArrivalTime, &serverId)
+	var lastArrivalTime, isClosed int
+	err = rslt.Scan(&sequenceNumber, &lastUpdated, &lastArrivalTime, &serverId, &isClosed)
 	if err != nil {
 		t.Fatalf("cannot scan row for checkpoint key, %s", err)
 	}
@@ -56,6 +56,32 @@ func Test_MysqlCheckpointExists(t *testing.T) {
 	}
 	if serverId != "testserverid" {
 		t.Errorf("server_id expected %v, actual %v", "testserverid", serverId)
+	}
+	if isClosed != 0 {
+		t.Errorf("is_closed expected %v, actual %v", 0, isClosed)
+	}
+
+	c.SetClosed("shard", true)
+	rslt = rc.QueryRow("SELECT sequence_number, last_updated, last_arrival_time, server_id, is_closed FROM KinesisConnector.TestCheckpoint WHERE checkpoint_key = ?", k)
+	err = rslt.Scan(&sequenceNumber, &lastUpdated, &lastArrivalTime, &serverId, &isClosed)
+	if err != nil {
+		t.Fatalf("cannot scan row for checkpoint key, %s", err)
+	}
+
+	if sequenceNumber != "fakeSeqNum" {
+		t.Errorf("SetCheckpoint() = %v, want %v", "fakeSeqNum", sequenceNumber)
+	}
+	if lastUpdated == "" {
+		t.Error("last_updated is empty")
+	}
+	if lastArrivalTime != approximateArrivalTime {
+		t.Errorf("last_arrival_time expected %v, actual %v", approximateArrivalTime, lastArrivalTime)
+	}
+	if serverId != "testserverid" {
+		t.Errorf("server_id expected %v, actual %v", "testserverid", serverId)
+	}
+	if isClosed != 1 {
+		t.Errorf("is_closed expected %v, actual %v", 1, isClosed)
 	}
 
 	rc.Exec("DELETE FROM KinesisConnector.TestCheckpoint WHERE checkpoint_key = ?", k)

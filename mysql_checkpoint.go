@@ -50,13 +50,26 @@ func (c *MysqlCheckpoint) SequenceNumber() string {
 	return c.sequenceNumber
 }
 
+func (c *MysqlCheckpoint) SetClosed(shardID string, isClosed bool) {
+	var isClosedInt int
+	if isClosed {
+		isClosedInt = 1
+	} else {
+		isClosedInt = 0
+	}
+	_, err := c.Db.Exec("UPDATE "+c.TableName+" SET is_closed = ? WHERE checkpoint_key = ?", isClosedInt, c.key(shardID))
+	if err != nil {
+		panic(err)
+	}
+}
+
 // SetCheckpoint stores a checkpoint for a shard (e.g. sequence number of last record processed by application).
 // Upon failover, record processing is resumed from this point.
 func (c *MysqlCheckpoint) SetCheckpoint(shardID string, sequenceNumber string, approximateArrivalTime int) {
 
 	dtString := time.Now().Format("2006-01-02 15:04:05")
 
-	_, err := c.Db.Exec("INSERT INTO "+c.TableName+" (sequence_number, checkpoint_key, last_updated, last_arrival_time, server_id) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE sequence_number = VALUES(sequence_number), last_updated = VALUES(last_updated), last_arrival_time = VALUES(last_arrival_time), server_id = VALUES(server_id)", sequenceNumber, c.key(shardID), dtString, approximateArrivalTime, c.ServerId)
+	_, err := c.Db.Exec("INSERT INTO "+c.TableName+" (sequence_number, checkpoint_key, last_updated, last_arrival_time, server_id, is_closed) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE sequence_number = VALUES(sequence_number), last_updated = VALUES(last_updated), last_arrival_time = VALUES(last_arrival_time), server_id = VALUES(server_id), is_closed = VALUES(is_closed)", sequenceNumber, c.key(shardID), dtString, approximateArrivalTime, c.ServerId, 0)
 	if err != nil {
 		panic(err)
 	}

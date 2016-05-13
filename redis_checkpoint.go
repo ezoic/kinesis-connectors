@@ -46,3 +46,7 @@ func (c *RedisCheckpoint) SetCheckpoint(shardID string, sequenceNumber string, a
 func (c *RedisCheckpoint) key(shardID string) string {
 	return fmt.Sprintf("%v:checkpoint:%v:%v", c.AppName, c.StreamName, shardID)
 }
+
+func (c *RedisCheckpoint) SetClosed(shardID string, isClosed bool) {
+	// no op
+}

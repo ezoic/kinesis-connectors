@@ -7,4 +7,5 @@ type Checkpoint interface {
 	CheckpointExists(shardID string) bool
 	SequenceNumber() string
 	SetCheckpoint(shardID string, sequenceNumber string, approximateArrivalTime int)
+	SetClosed(shardID string, isClosed bool)
 }
