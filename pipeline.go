@@ -39,7 +39,7 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 			p.Checkpoint.SetClosed(shardID, true)
 			l4g.Info("stream %v, shard %v has been closed", p.StreamName, shardID)
 			return
-		} else if kerr, ok := err.(*kinesis.Error); ok && kerr.Code == "ExpiredIteratorException" {
+		} else if kerr, ok := err.(*kinesis.Error); ok && (kerr.Code == "ExpiredIteratorException" || kerr.Code == "ServiceUnavailable") {
 			expiredIteratorCount++
 			if expiredIteratorCount < 10 {
 				l4g.Warn("expired iterator count %d: %v", expiredIteratorCount, kerr)
@@ -47,7 +47,7 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 				log.Fatalf("ProcessShard ERROR too many expired iterators: %v\n", err)
 			}
 		} else {
-			log.Fatalf("ProcessShard ERROR: %v (%v)\n", err, reflect.TypeOf(err).String())
+			log.Fatalf("ProcessShard ERROR: %#v (%v)\n", err, reflect.TypeOf(err).String())
 		}
 	}
 
@@ -69,7 +69,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 	shardInfo, err := ksis.GetShardIterator(args)
 
 	if err != nil {
-		log.Fatalf("GetShardIterator ERROR: %v\n", err)
+		return err
 	}
 
 	shardIterator := shardInfo.ShardIterator
