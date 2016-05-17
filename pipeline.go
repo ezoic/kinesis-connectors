@@ -39,7 +39,7 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 			p.Checkpoint.SetClosed(shardID, true)
 			l4g.Info("stream %v, shard %v has been closed", p.StreamName, shardID)
 			return
-		} else if kerr, ok := err.(*kinesis.Error); ok && (kerr.Code == "ExpiredIteratorException" || kerr.Code == "ServiceUnavailable") {
+		} else if kerr, ok := err.(*kinesis.Error); ok && (kerr.Code == "ExpiredIteratorException" || kerr.Code == "ServiceUnavailable" || strings.Contains(kerr.Message, "temporary failure of the server")) {
 			expiredIteratorCount++
 			if expiredIteratorCount < 10 {
 				l4g.Warn("expired iterator count %d: %v", expiredIteratorCount, kerr)
