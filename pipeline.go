@@ -143,6 +143,13 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 		}
 
 		shardIterator = recordSet.NextShardIterator
+
+		// Should only call getRecords on kinesis 5 times per second per shard
+		// This is here to throttle incase we are pulling too fast
+		duration := time.Now().Sub(startTime)
+		if duration < time.Millisecond*200 {
+			time.Sleep((time.Millisecond * 200) - duration)
+		}
 	}
 
 	return nil
