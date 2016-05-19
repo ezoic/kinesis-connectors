@@ -97,6 +97,12 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 		if err != nil {
 			if IsRecoverableError(err) {
 				consecutiveErrorAttempts++
+
+				// If Provisioned Throughput Exceeded error happens, delay the next loop
+				// Can only call GetRecords 5 times per second, so delay by 1/5 of a second
+				if strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == true {
+					time.Sleep(time.Millisecond * 200)
+				}
 				if consecutiveErrorAttempts > 6 || strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == false {
 					l4g.Warn("recoverable error for shard [%v], %s (%d) type=%v", shardID, err, consecutiveErrorAttempts, reflect.TypeOf(err).String())
 				}
@@ -143,13 +149,6 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 		}
 
 		shardIterator = recordSet.NextShardIterator
-
-		// Should only call getRecords on kinesis 5 times per second per shard
-		// This is here to throttle incase we are pulling too fast
-		duration := time.Now().Sub(startTime)
-		if duration < time.Millisecond*200 {
-			time.Sleep((time.Millisecond * 200) - duration)
-		}
 	}
 
 	return nil
