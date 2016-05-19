@@ -75,6 +75,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 	shardIterator := shardInfo.ShardIterator
 
 	consecutiveErrorAttempts := 0
+	provisionedThroughputExceededCount := 0
 
 	for {
 
@@ -98,10 +99,10 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 			if IsRecoverableError(err) {
 				consecutiveErrorAttempts++
 
-				// If Provisioned Throughput Exceeded error happens, delay the next loop
-				// Can only call GetRecords 5 times per second, so delay by 1/5 of a second
+				// Throttle by the number of times that provisionedThroughputExceeded is seen
 				if strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == true {
-					time.Sleep(time.Millisecond * 200)
+					provisionedThroughputExceededCount++
+					time.Sleep(time.Millisecond * time.Duration(200*provisionedThroughputExceededCount))
 				}
 				if consecutiveErrorAttempts > 6 || strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == false {
 					l4g.Warn("recoverable error for shard [%v], %s (%d) type=%v", shardID, err, consecutiveErrorAttempts, reflect.TypeOf(err).String())
@@ -113,6 +114,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 		} else {
 			consecutiveErrorAttempts = 0
 			*expiredIteratorCount = 0
+			provisionedThroughputExceededCount = 0
 		}
 
 		if len(recordSet.Records) > 0 {
@@ -152,10 +154,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 
 		// Should only call getRecords on kinesis 5 times per second per shard
 		// This is here to throttle incase we are pulling too fast
-		duration := time.Now().Sub(startTime)
-		if duration < time.Millisecond*200 {
-			time.Sleep((time.Millisecond * 200) - duration)
-		}
+		time.Sleep(time.Millisecond * 200)
 	}
 
 	return nil
