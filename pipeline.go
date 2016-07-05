@@ -47,7 +47,7 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 				log.Fatalf("ProcessShard ERROR too many expired iterators: %v\n", err)
 			}
 		} else {
-			log.Fatalf("ProcessShard ERROR: %#v (%v)\n", err, reflect.TypeOf(err).String())
+			log.Fatalf("ProcessShard ERROR: %#v (%v)\n%v\n", err, reflect.TypeOf(err).String(), err.Error())
 		}
 	}
 
