@@ -98,6 +98,7 @@ func s3IsRecoverableError(err error) bool {
 		"InternalFailure":                        true,
 		"Throttling":                             true,
 		"ServiceUnavailable":                     true,
+		"SlowDown":                               true,
 		//"ExpiredIteratorException":               true,
 	}
 	r := false
