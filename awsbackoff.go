@@ -16,7 +16,20 @@ import (
 	l4g "github.com/ezoic/log4go"
 )
 
-type isRecoverableErrorFunc func(error) bool
+type RecoverableErrorTestFunc func(error) bool
+type RecoverableErrorTester interface {
+	IsRecoverableError(error) bool
+}
+type recoverableErrorTesterType struct {
+	f RecoverableErrorTestFunc
+}
+
+func (i *recoverableErrorTesterType) IsRecoverableError(err error) bool {
+	return i.f(err)
+}
+func NewRecoverableErrorTester(f RecoverableErrorTestFunc) RecoverableErrorTester {
+	return &recoverableErrorTesterType{f: f}
+}
 
 func kinesisIsRecoverableError(err error) bool {
 	recoverableErrorCodes := map[string]bool{
@@ -119,8 +132,14 @@ func sqlIsRecoverableError(err error) bool {
 	return r
 }
 
-var isRecoverableErrors = []isRecoverableErrorFunc{
-	kinesisIsRecoverableError, netIsRecoverableError, urlIsRecoverableError, redshiftIsRecoverableError, s3IsRecoverableError, sqlIsRecoverableError, textIsRecoverableError,
+var recoverableErrorTesters = map[string]RecoverableErrorTester{
+	"kinesis":  NewRecoverableErrorTester(kinesisIsRecoverableError),
+	"network":  NewRecoverableErrorTester(netIsRecoverableError),
+	"url":      NewRecoverableErrorTester(urlIsRecoverableError),
+	"redshift": NewRecoverableErrorTester(redshiftIsRecoverableError),
+	"s3":       NewRecoverableErrorTester(s3IsRecoverableError),
+	"sql":      NewRecoverableErrorTester(sqlIsRecoverableError),
+	"text":     NewRecoverableErrorTester(textIsRecoverableError),
 }
 
 // this determines whether the error is recoverable
@@ -129,14 +148,18 @@ func IsRecoverableError(err error) bool {
 
 	l4g.Debug("isRecoverableError, type %s, value (%#v)\n", reflect.TypeOf(err).String(), err)
 
-	for _, errF := range isRecoverableErrors {
-		r = errF(err)
+	for _, t := range recoverableErrorTesters {
+		r = t.IsRecoverableError(err)
 		if r {
 			break
 		}
 	}
 
 	return r
+}
+
+func AddRecoverableErrorTester(name string, i RecoverableErrorTester) {
+	recoverableErrorTesters[name] = i
 }
 
 // handle the aws exponential backoff
