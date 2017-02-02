@@ -5,6 +5,7 @@ package connector
 // so they can checkpoint their progress.
 type Checkpoint interface {
 	CheckpointExists(shardID string) bool
+	CheckpointIsClosed(shardID string) bool
 	SequenceNumber() string
 	SetCheckpoint(shardID string, sequenceNumber string, approximateArrivalTime int)
 	SetClosed(shardID string, isClosed bool)

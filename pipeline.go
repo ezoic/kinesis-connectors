@@ -23,6 +23,7 @@ type Pipeline struct {
 	Filter                    Filter
 	StreamName                string
 	Transformer               Transformer
+	ShardIteratorInitType     string
 	CheckpointFilteredRecords bool
 }
 
@@ -60,8 +61,13 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 	args.Add("StreamName", p.StreamName)
 
 	if p.Checkpoint.CheckpointExists(shardID) {
+		if p.Checkpoint.CheckpointIsClosed(shardID) {
+			return nil
+		}
 		args.Add("ShardIteratorType", "AFTER_SEQUENCE_NUMBER")
 		args.Add("StartingSequenceNumber", p.Checkpoint.SequenceNumber())
+	} else if len(p.ShardIteratorInitType) != 0 {
+		args.Add("ShardIteratorType", p.ShardIteratorInitType)
 	} else {
 		args.Add("ShardIteratorType", "TRIM_HORIZON")
 	}

@@ -19,6 +19,7 @@ type MysqlCheckpoint struct {
 	ServerId   string
 
 	sequenceNumber string
+	isClosed       bool
 }
 
 // CheckpointExists determines if a checkpoint for a particular Shard exists.
@@ -26,19 +27,45 @@ type MysqlCheckpoint struct {
 // TRIM_HORIZON or AFTER_SEQUENCE_NUMBER (if checkpoint exists).
 func (c *MysqlCheckpoint) CheckpointExists(shardID string) bool {
 
-	l4g.Finest("SELECT sequence_number FROM " + c.TableName + " WHERE checkpoint_key = ?")
+	l4g.Finest("SELECT sequence_number, is_closed FROM " + c.TableName + " WHERE checkpoint_key = ?")
 
-	row := c.Db.QueryRow("SELECT sequence_number FROM "+c.TableName+" WHERE checkpoint_key = ?", c.key(shardID))
+	row := c.Db.QueryRow("SELECT sequence_number, is_closed FROM "+c.TableName+" WHERE checkpoint_key = ?", c.key(shardID))
 	var val string
-	err := row.Scan(&val)
+	var isClosed int
+	err := row.Scan(&val, &isClosed)
 	if err == nil {
 		l4g.Finest("sequence:%s", val)
 		c.sequenceNumber = val
+		c.isClosed = (isClosed != 0)
 		return true
 	}
 
 	if err == sql.ErrNoRows {
+		c.isClosed = false
 		return false
+	}
+
+	// something bad happened, better blow up the process
+	panic(err)
+}
+
+// CheckpointIsClosed determines if a checkpoint for a particular Shard exists and is closed already
+// Typically used to determine whether we should start processing the shard with
+// TRIM_HORIZON or AFTER_SEQUENCE_NUMBER (if checkpoint exists).
+func (c *MysqlCheckpoint) CheckpointIsClosed(shardID string) bool {
+	return c.isClosed
+}
+
+// CheckpointExists determines if a checkpoint for a particular Shard exists.
+// Typically used to determine whether we should start processing the shard with
+// TRIM_HORIZON or AFTER_SEQUENCE_NUMBER (if checkpoint exists).
+func (c *MysqlCheckpoint) DeleteCheckpoint(shardID string) bool {
+
+	l4g.Finest("DELETE FROM " + c.TableName + " WHERE checkpoint_key = ?")
+
+	_, err := c.Db.Exec("DELETE FROM "+c.TableName+" WHERE checkpoint_key = ?", c.key(shardID))
+	if err == nil {
+		return true
 	}
 
 	// something bad happened, better blow up the process
