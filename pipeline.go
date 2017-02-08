@@ -25,6 +25,7 @@ type Pipeline struct {
 	Transformer               Transformer
 	ShardIteratorInitType     string
 	CheckpointFilteredRecords bool
+	GetRecordsLimit           int
 }
 
 // ProcessShard kicks off the process of a Kinesis Shard.
@@ -81,7 +82,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 	shardIterator := shardInfo.ShardIterator
 
 	consecutiveErrorAttempts := 0
-	provisionedThroughputExceededCount := 0
+	//provisionedThroughputExceededCount := 0
 
 	for {
 
@@ -94,6 +95,9 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 
 		args = kinesis.NewArgs()
 		args.Add("ShardIterator", shardIterator)
+		if p.GetRecordsLimit > 0 {
+			args.Add("Limit", p.GetRecordsLimit)
+		}
 		startTime := time.Now()
 		recordSet, err := ksis.GetRecords(args)
 		getRecordsDuration := time.Now().Sub(startTime)
@@ -106,10 +110,10 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 				consecutiveErrorAttempts++
 
 				// Throttle by the number of times that provisionedThroughputExceeded is seen
-				if strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == true {
-					provisionedThroughputExceededCount++
-					time.Sleep(time.Millisecond * time.Duration(200*provisionedThroughputExceededCount))
-				}
+				//				if strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == true {
+				//					provisionedThroughputExceededCount++
+				//					time.Sleep(time.Millisecond * time.Duration(200*provisionedThroughputExceededCount))
+				//				}
 				if consecutiveErrorAttempts > 6 || strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == false {
 					l4g.Warn("recoverable error for shard [%v], %s (%d) type=%v", shardID, err, consecutiveErrorAttempts, reflect.TypeOf(err).String())
 				}
@@ -120,7 +124,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 		} else {
 			consecutiveErrorAttempts = 0
 			*expiredIteratorCount = 0
-			provisionedThroughputExceededCount = 0
+			//provisionedThroughputExceededCount = 0
 		}
 
 		if len(recordSet.Records) > 0 {
