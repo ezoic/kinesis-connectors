@@ -23,9 +23,7 @@ func CreateStream(k *kinesis.Kinesis, streamName string, shardCount int) {
 	timeout := make(chan bool, 30)
 
 	for {
-		args := kinesis.NewArgs()
-		args.Add("StreamName", streamName)
-		resp, _ = k.DescribeStream(args)
+		resp, _ = k.DescribeStreamAllShards(streamName)
 		streamStatus := resp.StreamDescription.StreamStatus
 		l4g.Info("Stream [%v] is %v", streamName, streamStatus)
 
