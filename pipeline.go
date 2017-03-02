@@ -39,7 +39,7 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 		err := p.processShardInternal(ksis, shardID, &expiredIteratorCount)
 		if err == nil {
 			p.Checkpoint.SetClosed(shardID, true)
-			l4g.Info("stream %v, shard %v has been closed", p.StreamName, shardID)
+			l4g.Info("stream %s, shard %s has been closed", p.StreamName, shardID)
 			return
 		} else if kerr, ok := err.(*kinesis.Error); ok && (kerr.Code == "ExpiredIteratorException" || kerr.Code == "ServiceUnavailable" || strings.Contains(kerr.Message, "temporary failure of the server")) {
 			expiredIteratorCount++
@@ -102,7 +102,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 		recordSet, err := ksis.GetRecords(args)
 		getRecordsDuration := time.Now().Sub(startTime)
 		if getRecordsDuration.Seconds() > 30 {
-			l4g.Warn("kinesis request duration [%v] on shard [%v]", getRecordsDuration.String(), shardID)
+			l4g.Warn("kinesis request duration [%s] on stream [%s] shard [%s]", getRecordsDuration.String(), p.StreamName, shardID)
 		}
 
 		if err != nil {
@@ -115,7 +115,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 				//					time.Sleep(time.Millisecond * time.Duration(200*provisionedThroughputExceededCount))
 				//				}
 				if consecutiveErrorAttempts > 6 || strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == false {
-					l4g.Warn("recoverable error for shard [%v], %s (%d) type=%v", shardID, err, consecutiveErrorAttempts, reflect.TypeOf(err).String())
+					l4g.Warn("recoverable error for stream [%s] shard [%s], %s (%d) type=%s", p.StreamName, shardID, err, consecutiveErrorAttempts, reflect.TypeOf(err).String())
 				}
 				continue
 			} else {
@@ -140,7 +140,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 				}
 			}
 		} else if recordSet.NextShardIterator == "" {
-			l4g.Debug("stream %v, shard %v has returned an empty NextShardIterator.  this indicates that it is closed.", p.StreamName, shardID)
+			l4g.Debug("stream %s, shard %s has returned an empty NextShardIterator.  this indicates that it is closed.", p.StreamName, shardID)
 			return nil
 		} else if shardIterator == recordSet.NextShardIterator {
 			return fmt.Errorf("NextShardIterator ERROR: %v", recordSet.NextShardIterator)
@@ -164,7 +164,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 
 		// Should only call getRecords on kinesis 5 times per second per shard
 		// This is here to throttle incase we are pulling too fast
-		time.Sleep(time.Millisecond * 200)
+		//time.Sleep(time.Millisecond * 200)
 	}
 
 	return nil
