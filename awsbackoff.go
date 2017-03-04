@@ -3,6 +3,7 @@ package connector
 import (
 	"io"
 	"math"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -168,7 +169,9 @@ func HandleAwsWaitTimeExp(attempts int, infoString string) {
 	//http://docs.aws.amazon.com/general/latest/gr/api-retries.html
 	// wait up to 5 minutes based on the aws exponential backoff algorithm
 	if attempts > 0 {
-		waitTime := time.Duration(math.Min(100*math.Pow(2, float64(attempts)), 300000)) * time.Millisecond
+		// jitter: https://www.awsarchitectureblog.com/2015/03/backoff.html
+		// this is the full jitter.
+		waitTime := time.Duration(rand.Intn(int(math.Min(100*math.Pow(2, float64(attempts)), 300000)))) * time.Millisecond
 		if attempts > 6 {
 			l4g.Info("aws error attempt %v failed for %s, waiting %s", attempts, infoString, waitTime.String())
 		}

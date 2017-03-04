@@ -31,12 +31,16 @@ func (c *MysqlCheckpoint) CheckpointExists(shardID string) bool {
 
 	row := c.Db.QueryRow("SELECT sequence_number, is_closed FROM "+c.TableName+" WHERE checkpoint_key = ?", c.key(shardID))
 	var val string
-	var isClosed int
+	var isClosed sql.NullInt64
 	err := row.Scan(&val, &isClosed)
 	if err == nil {
 		l4g.Finest("sequence:%s", val)
 		c.sequenceNumber = val
-		c.isClosed = (isClosed != 0)
+		if isClosed.Valid == false {
+			c.isClosed = true
+		} else {
+			c.isClosed = (isClosed.Int64 != 0)
+		}
 		return true
 	}
 
