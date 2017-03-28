@@ -145,8 +145,10 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 		} else if shardIterator == recordSet.NextShardIterator {
 			return fmt.Errorf("NextShardIterator ERROR: %v", recordSet.NextShardIterator)
 		} else {
-			l4g.Fine("no records received, sleeping")
-			time.Sleep(5 * time.Second)
+			if err == nil && recordSet.MillisBehindLatest < 10000 {
+				l4g.Fine("no records received, sleeping")
+				time.Sleep(5 * time.Second)
+			}
 		}
 
 		if p.Buffer.ShouldFlush() {
