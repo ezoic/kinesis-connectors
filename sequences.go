@@ -3,7 +3,7 @@ package connector
 import (
 	"sort"
 
-	l4g "code.google.com/p/log4go"
+	l4g "github.com/ezoic/log4go"
 	"github.com/shopspring/decimal"
 )
 
