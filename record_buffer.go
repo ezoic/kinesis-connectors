@@ -64,11 +64,11 @@ func (b *RecordBuffer) sequenceExists(sequenceNumber string) bool {
 
 // ShouldFlush determines if the buffer has reached its target size.
 func (b *RecordBuffer) ShouldFlush() bool {
-	if len(b.sequencesInBuffer) >= b.NumRecordsToBuffer {
+	if len(b.recordsInBuffer) >= b.NumRecordsToBuffer {
 		return true
 	}
 
-	if b.MaxTimeBetweenFlush > 0 && len(b.sequencesInBuffer) > 0 && time.Since(b.lastFlush) > b.MaxTimeBetweenFlush {
+	if b.MaxTimeBetweenFlush > 0 && len(b.recordsInBuffer) > 0 && time.Since(b.lastFlush) > b.MaxTimeBetweenFlush {
 		return true
 	}
 	return false

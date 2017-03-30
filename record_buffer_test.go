@@ -16,8 +16,8 @@ func (r TestRecord) ToJSON() []byte {
 }
 
 func TestProcessRecord(t *testing.T) {
-	var r1, s1 = TestRecord{}, "Seq1"
-	var r2, s2 = TestRecord{}, "Seq2"
+	var r1, s1 = TestRecord{}, "1"
+	var r2, s2 = TestRecord{}, "2"
 
 	b := RecordBuffer{}
 	b.ProcessRecord(r1, s1, int(time.Now().Unix()))
@@ -40,8 +40,8 @@ func TestProcessRecord(t *testing.T) {
 }
 
 func TestSequenceExists(t *testing.T) {
-	var r1, s1 = TestRecord{}, "Seq1"
-	var r2, s2 = TestRecord{}, "Seq2"
+	var r1, s1 = TestRecord{}, "1"
+	var r2, s2 = TestRecord{}, "2"
 
 	b := RecordBuffer{}
 	b.ProcessRecord(r1, s1, int(time.Now().Unix()))
@@ -58,7 +58,7 @@ func TestSequenceExists(t *testing.T) {
 }
 
 func TestFlush(t *testing.T) {
-	var r1, s1 = TestRecord{}, "SeqNum"
+	var r1, s1 = TestRecord{}, "1"
 	b := RecordBuffer{}
 	b.ProcessRecord(r1, s1, int(time.Now().Unix()))
 
@@ -70,8 +70,8 @@ func TestFlush(t *testing.T) {
 }
 
 func TestLastSequenceNumber(t *testing.T) {
-	var r1, s1 = TestRecord{}, "Seq1"
-	var r2, s2 = TestRecord{}, "Seq2"
+	var r1, s1 = TestRecord{}, "1"
+	var r2, s2 = TestRecord{}, "2"
 
 	b := RecordBuffer{}
 	b.ProcessRecord(r1, s1, int(time.Now().Unix()))
@@ -88,8 +88,8 @@ func TestLastSequenceNumber(t *testing.T) {
 }
 
 func TestFirstSequenceNumber(t *testing.T) {
-	var r1, s1 = TestRecord{}, "Seq1"
-	var r2, s2 = TestRecord{}, "Seq2"
+	var r1, s1 = TestRecord{}, "1"
+	var r2, s2 = TestRecord{}, "2"
 
 	b := RecordBuffer{}
 	b.ProcessRecord(r1, s1, int(time.Now().Unix()))
@@ -107,8 +107,8 @@ func TestFirstSequenceNumber(t *testing.T) {
 
 func TestShouldFlush(t *testing.T) {
 	const n = 2
-	var r1, s1 = TestRecord{}, "Seq1"
-	var r2, s2 = TestRecord{}, "Seq2"
+	var r1, s1 = TestRecord{}, "1"
+	var r2, s2 = TestRecord{}, "2"
 
 	b := RecordBuffer{NumRecordsToBuffer: n}
 	b.ProcessRecord(r1, s1, int(time.Now().Unix()))
