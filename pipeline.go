@@ -7,7 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"errors"
+
 	"github.com/ezoic/go-kinesis"
+	"github.com/ezoic/klease"
 	l4g "github.com/ezoic/log4go"
 )
 
@@ -26,11 +29,21 @@ type Pipeline struct {
 	ShardIteratorInitType     string
 	CheckpointFilteredRecords bool
 	GetRecordsLimit           int
+	LeaseCoordinator          *klease.Coordinator
+	RunningPipes              map[string]bool
 }
 
 // ProcessShard kicks off the process of a Kinesis Shard.
 // It is a long running process that will continue to read from the shard.
 func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
+	//let kauto know we are off
+	if p.LeaseCoordinator != nil {
+		defer func() {
+			if p.RunningPipes != nil {
+				p.RunningPipes[shardID] = false
+			}
+		}()
+	}
 
 	expiredIteratorCount := 0
 
@@ -40,6 +53,12 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 		if err == nil {
 			p.Checkpoint.SetClosed(shardID, true)
 			l4g.Info("stream %s, shard %s has been closed", p.StreamName, shardID)
+			if p.LeaseCoordinator != nil {
+				err = p.LeaseCoordinator.DeleteLease(shardID)
+				if err != nil {
+					l4g.Error("stream %s, shard %s has been closed but lease could not be deleted", p.StreamName, shardID)
+				}
+			}
 			return
 		} else if kerr, ok := err.(*kinesis.Error); ok && (kerr.Code == "ExpiredIteratorException" || kerr.Code == "ServiceUnavailable" || strings.Contains(kerr.Message, "temporary failure of the server")) {
 			expiredIteratorCount++
@@ -48,6 +67,9 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 			} else {
 				log.Fatalf("ProcessShard ERROR too many expired iterators: %v\n", err)
 			}
+		} else if err.Error() == "LostOwnership" {
+			l4g.Info("\n\n\nstream %s, shard %s has changed owners\n\n\n", p.StreamName, shardID)
+			return
 		} else {
 			log.Fatalf("ProcessShard ERROR: %#v (%v)\n%v\n", err, reflect.TypeOf(err).String(), err.Error())
 		}
@@ -144,11 +166,14 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 			return nil
 		} else if shardIterator == recordSet.NextShardIterator {
 			return fmt.Errorf("NextShardIterator ERROR: %v", recordSet.NextShardIterator)
-		} else {
-			if err == nil && recordSet.MillisBehindLatest < 10000 {
-				l4g.Fine("no records received, sleeping")
-				time.Sleep(5 * time.Second)
-			}
+		} else if err == nil && recordSet.MillisBehindLatest < 10000 {
+			l4g.Fine("no records received, sleeping")
+			time.Sleep(5 * time.Second)
+		}
+
+		//we lost ownership. stop working.
+		if p.LeaseCoordinator != nil && p.LeaseCoordinator.GetCurrentlyHeldLease(shardID) == nil {
+			return errors.New("LostOwnership")
 		}
 
 		if p.Buffer.ShouldFlush() {
