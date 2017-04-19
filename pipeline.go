@@ -36,15 +36,6 @@ type Pipeline struct {
 // ProcessShard kicks off the process of a Kinesis Shard.
 // It is a long running process that will continue to read from the shard.
 func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
-	//let kauto know we are off
-	if p.LeaseCoordinator != nil {
-		defer func() {
-			if p.RunningPipes != nil {
-				p.RunningPipes[shardID] = false
-			}
-		}()
-	}
-
 	expiredIteratorCount := 0
 
 	for true {
@@ -69,9 +60,15 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 			}
 		} else if err.Error() == "LostOwnership" {
 			l4g.Info("\n\n\nstream %s, shard %s has changed owners\n\n\n", p.StreamName, shardID)
+			//let kauto know we are off so we have the ability to start this shard again if we ever regain ownership
+			if p.RunningPipes != nil {
+				p.RunningPipes[shardID] = false
+			}
 			return
 		} else {
-			log.Fatalf("ProcessShard ERROR: %#v (%v)\n%v\n", err, reflect.TypeOf(err).String(), err.Error())
+			//let l4g have time to flush before we kill everything
+			time.Sleep(100 * time.Millisecond)
+			log.Fatalf("ProcessShard ERROR: on shard %s and stream %s %#v (%v)\n%v\n", shardID, p.StreamName, err, reflect.TypeOf(err).String(), err.Error())
 		}
 	}
 
