@@ -168,12 +168,13 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 			time.Sleep(5 * time.Second)
 		}
 
-		//we lost ownership. stop working.
-		if p.LeaseCoordinator != nil && p.LeaseCoordinator.GetCurrentlyHeldLease(shardID) == nil {
-			return errors.New("LostOwnership")
-		}
-
 		if p.Buffer.ShouldFlush() {
+
+			//we lost ownership. stop working.
+			if p.LeaseCoordinator != nil && p.LeaseCoordinator.GetCurrentlyHeldLease(shardID) == nil {
+				return errors.New("LostOwnership")
+			}
+
 			if p.Buffer.NumRecordsInBuffer() > 0 {
 				err := p.Emitter.Emit(p.Buffer, p.Transformer, shardID)
 				if err != nil {
