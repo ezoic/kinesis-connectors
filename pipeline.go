@@ -160,7 +160,8 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 			}
 		} else if recordSet.NextShardIterator == "" {
 			l4g.Debug("stream %s, shard %s has returned an empty NextShardIterator.  this indicates that it is closed.", p.StreamName, shardID)
-			return nil
+			err = p.flushBuffer(shardID)
+			return err
 		} else if shardIterator == recordSet.NextShardIterator {
 			return fmt.Errorf("NextShardIterator ERROR: %v", recordSet.NextShardIterator)
 		} else if err == nil && recordSet.MillisBehindLatest < 10000 {
@@ -169,20 +170,9 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 		}
 
 		if p.Buffer.ShouldFlush() {
-
-			//we lost ownership. stop working.
-			if p.LeaseCoordinator != nil && p.LeaseCoordinator.GetCurrentlyHeldLease(shardID) == nil {
-				return errors.New("LostOwnership")
+			if err = p.flushBuffer(shardID); err != nil {
+				return err
 			}
-
-			if p.Buffer.NumRecordsInBuffer() > 0 {
-				err := p.Emitter.Emit(p.Buffer, p.Transformer, shardID)
-				if err != nil {
-					return err
-				}
-			}
-			p.Checkpoint.SetCheckpoint(shardID, p.Buffer.LastSequenceNumber(), p.Buffer.LastApproximateArrivalTime())
-			p.Buffer.Flush()
 		}
 
 		shardIterator = recordSet.NextShardIterator
@@ -191,6 +181,24 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 		// This is here to throttle incase we are pulling too fast
 		//time.Sleep(time.Millisecond * 200)
 	}
+
+	return nil
+}
+
+func (p Pipeline) flushBuffer(shardID string) error {
+	//we lost ownership. stop working.
+	if p.LeaseCoordinator != nil && p.LeaseCoordinator.GetCurrentlyHeldLease(shardID) == nil {
+		return errors.New("LostOwnership")
+	}
+
+	if p.Buffer.NumRecordsInBuffer() > 0 {
+		err := p.Emitter.Emit(p.Buffer, p.Transformer, shardID)
+		if err != nil {
+			return err
+		}
+	}
+	p.Checkpoint.SetCheckpoint(shardID, p.Buffer.LastSequenceNumber(), p.Buffer.LastApproximateArrivalTime())
+	p.Buffer.Flush()
 
 	return nil
 }
