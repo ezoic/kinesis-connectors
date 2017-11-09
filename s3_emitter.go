@@ -71,7 +71,7 @@ func (e S3Emitter) Emit(b Buffer, t Transformer, shardID string) error {
 		l4g.Error("S3Put ERROR: %v", err)
 		return err
 	} else {
-		l4g.Info("[%v] records emitted to [s3://%v/%v] on shard [%v]", b.NumRecordsInBuffer(), e.S3Bucket, s3File, shardID)
+		l4g.Debug("[%v] records emitted to [s3://%v/%v] on shard [%v]", b.NumRecordsInBuffer(), e.S3Bucket, s3File, shardID)
 	}
 	return nil
 }
