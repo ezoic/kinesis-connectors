@@ -133,7 +133,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 				//					provisionedThroughputExceededCount++
 				//					time.Sleep(time.Millisecond * time.Duration(200*provisionedThroughputExceededCount))
 				//				}
-				if consecutiveErrorAttempts > 6 || strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == false {
+				if consecutiveErrorAttempts > 8 || strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == false {
 					l4g.Warn("recoverable error for stream [%s] shard [%s], %s (%d) type=%s", p.StreamName, shardID, err, consecutiveErrorAttempts, reflect.TypeOf(err).String())
 				}
 				continue
