@@ -53,7 +53,9 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 			return
 		} else if kerr, ok := err.(*kinesis.Error); ok && (kerr.Code == "ExpiredIteratorException" || kerr.Code == "ServiceUnavailable" || strings.Contains(kerr.Message, "temporary failure of the server")) {
 			expiredIteratorCount++
-			if expiredIteratorCount < 10 {
+			if expiredIteratorCount < 5 {
+				// do nothing, no need for an error here
+			} else if expiredIteratorCount < 10 {
 				l4g.Warn("expired iterator count %d: %v", expiredIteratorCount, kerr)
 			} else {
 				log.Fatalf("ProcessShard ERROR too many expired iterators: %v\n", err)
@@ -133,7 +135,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 				//					provisionedThroughputExceededCount++
 				//					time.Sleep(time.Millisecond * time.Duration(200*provisionedThroughputExceededCount))
 				//				}
-				if consecutiveErrorAttempts > 8 || strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == false {
+				if consecutiveErrorAttempts > 15 || strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == false {
 					l4g.Warn("recoverable error for stream [%s] shard [%s], %s (%d) type=%s", p.StreamName, shardID, err, consecutiveErrorAttempts, reflect.TypeOf(err).String())
 				}
 				continue

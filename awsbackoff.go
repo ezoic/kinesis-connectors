@@ -172,7 +172,7 @@ func HandleAwsWaitTimeExp(attempts int, infoString string) {
 		// jitter: https://www.awsarchitectureblog.com/2015/03/backoff.html
 		// this is the full jitter.
 		waitTime := time.Duration(rand.Intn(int(math.Min(100*math.Pow(2, float64(attempts)), 300000)))) * time.Millisecond
-		if attempts > 8 {
+		if attempts > 15 {
 			l4g.Info("aws error attempt %v failed for %s, waiting %s", attempts, infoString, waitTime.String())
 		}
 		time.Sleep(waitTime)
