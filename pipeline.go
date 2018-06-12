@@ -58,7 +58,7 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 			} else if expiredIteratorCount < 10 {
 				l4g.Warn("expired iterator count %d: %v", expiredIteratorCount, kerr)
 			} else {
-				log.Fatalf("ProcessShard ERROR too many expired iterators: %v\n", err)
+				log.Panicf("ProcessShard ERROR too many expired iterators: %v\n", err)
 			}
 		} else if err.Error() == "LostOwnership" {
 			l4g.Info("\n\n\nstream %s, shard %s has changed owners\n\n\n", p.StreamName, shardID)
@@ -70,7 +70,7 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 		} else {
 			//let l4g have time to flush before we kill everything
 			time.Sleep(100 * time.Millisecond)
-			log.Fatalf("ProcessShard ERROR: on shard %s and stream %s %#v (%v)\n%v\n", shardID, p.StreamName, err, reflect.TypeOf(err).String(), err.Error())
+			log.Panicf("ProcessShard ERROR: on shard %s and stream %s %#v (%v)\n%v\n", shardID, p.StreamName, err, reflect.TypeOf(err).String(), err.Error())
 		}
 	}
 
@@ -108,7 +108,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 	for {
 
 		if consecutiveErrorAttempts > 50 {
-			log.Fatalf("Too many consecutive error attempts on shard %v", shardID)
+			log.Panicf("Too many consecutive error attempts on shard %v", shardID)
 		}
 
 		// handle the aws backoff stuff

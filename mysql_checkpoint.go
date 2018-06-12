@@ -89,7 +89,7 @@ func (c *MysqlCheckpoint) SetClosed(shardID string, isClosed bool) {
 		isClosedInt = 0
 	}
 
-	dtString := time.Now().Format("2006-01-02 15:04:05")
+	dtString := time.Now().Format("2006-01-02 15:04:05-0700")
 	approximateArrivalTime := 0
 	_, err := c.Db.Exec("INSERT INTO "+c.TableName+" (sequence_number, checkpoint_key, last_updated, last_arrival_time, server_id, is_closed) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE last_updated = VALUES(last_updated), server_id = VALUES(server_id), is_closed = VALUES(is_closed)", c.sequenceNumber, c.key(shardID), dtString, approximateArrivalTime, c.ServerId, isClosedInt)
 	if err != nil {
