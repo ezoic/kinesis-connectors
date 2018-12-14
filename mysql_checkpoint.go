@@ -103,7 +103,7 @@ func (c *MysqlCheckpoint) SetCheckpoint(shardID string, sequenceNumber string, a
 
 	dtString := time.Now().Format("2006-01-02 15:04:05")
 
-	_, err := c.Db.Exec("INSERT INTO "+c.TableName+" (sequence_number, checkpoint_key, last_updated, last_arrival_time, server_id, is_closed) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE sequence_number = VALUES(sequence_number), last_updated = VALUES(last_updated), last_arrival_time = VALUES(last_arrival_time), server_id = VALUES(server_id), is_closed = VALUES(is_closed)", sequenceNumber, c.key(shardID), dtString, approximateArrivalTime, c.ServerId, 0)
+	_, err := MysqlRetryExec(c.Db, "INSERT INTO "+c.TableName+" (sequence_number, checkpoint_key, last_updated, last_arrival_time, server_id, is_closed) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE sequence_number = VALUES(sequence_number), last_updated = VALUES(last_updated), last_arrival_time = VALUES(last_arrival_time), server_id = VALUES(server_id), is_closed = VALUES(is_closed)", sequenceNumber, c.key(shardID), dtString, approximateArrivalTime, c.ServerId, 0)
 	if err != nil {
 		panic(err)
 	}
@@ -114,4 +114,28 @@ func (c *MysqlCheckpoint) SetCheckpoint(shardID string, sequenceNumber string, a
 // key generates a unique mysql key for storage of Checkpoint.
 func (c *MysqlCheckpoint) key(shardID string) string {
 	return fmt.Sprintf("%v:checkpoint:%v:%v", c.AppName, c.StreamName, shardID)
+}
+
+func MysqlRetryExec(db *sql.DB, queryStatement string, args ...interface{}) (sql.Result, error) {
+
+	i := 0
+	var err error
+	var affected sql.Result
+	for true {
+
+		HandleAwsWaitTimeExp(i, fmt.Sprintf("Retryable database error: %s", err.Error()))
+
+		affected, err = db.Exec(queryStatement, args...)
+		if err == nil {
+			break
+		}
+
+		if IsRecoverableError(err) || i >= 10 {
+			break
+		}
+		i++
+	}
+
+	return affected, err
+
 }

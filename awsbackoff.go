@@ -129,6 +129,9 @@ func sqlIsRecoverableError(err error) bool {
 	if strings.Contains(err.Error(), "current transaction is aborted") {
 		r = true
 	}
+	if strings.Contains(err.Error(), "dial tcp: i/o timeout") {
+		r = true
+	}
 
 	return r
 }
