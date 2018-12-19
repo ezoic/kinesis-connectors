@@ -3,6 +3,8 @@ package connector
 import (
 	"database/sql"
 	"fmt"
+	"math/rand"
+	"strings"
 	"time"
 
 	l4g "github.com/ezoic/log4go"
@@ -103,11 +105,25 @@ func (c *MysqlCheckpoint) SetCheckpoint(shardID string, sequenceNumber string, a
 
 	dtString := time.Now().Format("2006-01-02 15:04:05")
 
-	_, err := c.Db.Exec("INSERT INTO "+c.TableName+" (sequence_number, checkpoint_key, last_updated, last_arrival_time, server_id, is_closed) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE sequence_number = VALUES(sequence_number), last_updated = VALUES(last_updated), last_arrival_time = VALUES(last_arrival_time), server_id = VALUES(server_id), is_closed = VALUES(is_closed)", sequenceNumber, c.key(shardID), dtString, approximateArrivalTime, c.ServerId, 0)
-	if err != nil {
-		panic(err)
+	i := 0
+	const maxAttempts = 5
+	for true {
+		if i > 0 {
+			time.Sleep(time.Duration(rand.Intn(30)+5) * time.Second)
+		}
+
+		_, err := c.Db.Exec("INSERT INTO "+c.TableName+" (sequence_number, checkpoint_key, last_updated, last_arrival_time, server_id, is_closed) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE sequence_number = VALUES(sequence_number), last_updated = VALUES(last_updated), last_arrival_time = VALUES(last_arrival_time), server_id = VALUES(server_id), is_closed = VALUES(is_closed)", sequenceNumber, c.key(shardID), dtString, approximateArrivalTime, c.ServerId, 0)
+		if err == nil {
+			c.sequenceNumber = sequenceNumber
+			return
+		}
+
+		if (IsRecoverableError(err) == false && strings.Contains(err.Error(), "i/o timeout") == false) || i >= maxAttempts {
+			panic(err)
+		}
+
+		i++
 	}
-	c.sequenceNumber = sequenceNumber
 
 }
 
