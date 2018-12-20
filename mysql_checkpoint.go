@@ -121,6 +121,7 @@ func (c *MysqlCheckpoint) SetCheckpoint(shardID string, sequenceNumber string, a
 		if (IsRecoverableError(err) == false && strings.Contains(err.Error(), "i/o timeout") == false) || i >= maxAttempts {
 			panic(err)
 		}
+		l4g.Warn("recoverable error setting checkpoint for %s: %s", c.key(shardID), err.Error())
 
 		i++
 	}
