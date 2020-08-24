@@ -55,7 +55,7 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 			expiredIteratorCount++
 			if expiredIteratorCount < 5 {
 				// do nothing, no need for an error here
-			} else if expiredIteratorCount < 10 {
+			} else if expiredIteratorCount < 20 {
 				l4g.Warn("expired iterator count %d: %v", expiredIteratorCount, kerr)
 			} else {
 				log.Panicf("ProcessShard ERROR too many expired iterators: %v\n", err)
