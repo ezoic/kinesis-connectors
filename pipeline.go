@@ -3,6 +3,7 @@ package connector
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"reflect"
 	"strings"
 	"time"
@@ -51,7 +52,7 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 				}
 			}
 			return
-		} else if kerr, ok := err.(*kinesis.Error); ok && (kerr.Code == "ExpiredIteratorException" || kerr.Code == "ServiceUnavailable" || strings.Contains(kerr.Message, "temporary failure of the server")) {
+		} else if kerr, ok := err.(*kinesis.Error); ok && (kerr.Code == "ExpiredIteratorException" || (kerr.Code == "ServiceUnavailable" || kerr.StatusCode == http.StatusServiceUnavailable) || strings.Contains(kerr.Message, "temporary failure of the server")) {
 			expiredIteratorCount++
 			if expiredIteratorCount < 5 {
 				// do nothing, no need for an error here
