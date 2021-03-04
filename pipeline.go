@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"errors"
@@ -31,6 +32,7 @@ type Pipeline struct {
 	CheckpointFilteredRecords bool
 	GetRecordsLimit           int
 	LeaseCoordinator          *klease.Coordinator
+	PipelineLock              *sync.Mutex
 	RunningPipes              map[string]bool
 }
 
@@ -65,7 +67,13 @@ func (p Pipeline) ProcessShard(ksis *kinesis.Kinesis, shardID string) {
 			l4g.Info("\n\n\nstream %s, shard %s has changed owners\n\n\n", p.StreamName, shardID)
 			//let kauto know we are off so we have the ability to start this shard again if we ever regain ownership
 			if p.RunningPipes != nil {
+				if p.PipelineLock != nil {
+					p.PipelineLock.Lock()
+				}
 				p.RunningPipes[shardID] = false
+				if p.PipelineLock != nil {
+					p.PipelineLock.Unlock()
+				}
 			}
 			return
 		} else {
