@@ -38,6 +38,7 @@ func kinesisIsRecoverableError(err error) bool {
 		"InternalFailure":                        true,
 		"Throttling":                             true,
 		"ServiceUnavailable":                     true,
+		"LimitExceededException":                 true,
 		//"ExpiredIteratorException":               true,
 	}
 	r := false
