@@ -112,7 +112,6 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 	shardIterator := shardInfo.ShardIterator
 
 	consecutiveErrorAttempts := 0
-	//provisionedThroughputExceededCount := 0
 
 	for {
 
@@ -139,11 +138,11 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 			if IsRecoverableError(err) {
 				consecutiveErrorAttempts++
 
-				// Throttle by the number of times that provisionedThroughputExceeded is seen
-				//				if strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == true {
-				//					provisionedThroughputExceededCount++
-				//					time.Sleep(time.Millisecond * time.Duration(200*provisionedThroughputExceededCount))
-				//				}
+				// sleep when getting throttled
+				if strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == true {
+					time.Sleep(time.Millisecond * 200)
+				}
+
 				if consecutiveErrorAttempts > 15 || strings.Contains(err.Error(), "ProvisionedThroughputExceededException") == false {
 					l4g.Warn("recoverable error for stream [%s] shard [%s], %s (%d) type=%s", p.StreamName, shardID, err, consecutiveErrorAttempts, reflect.TypeOf(err).String())
 				}
@@ -154,7 +153,6 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 		} else {
 			consecutiveErrorAttempts = 0
 			*expiredIteratorCount = 0
-			//provisionedThroughputExceededCount = 0
 		}
 
 		if len(recordSet.Records) > 0 {
@@ -187,13 +185,7 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 		}
 
 		shardIterator = recordSet.NextShardIterator
-
-		// Should only call getRecords on kinesis 5 times per second per shard
-		// This is here to throttle incase we are pulling too fast
-		//time.Sleep(time.Millisecond * 200)
 	}
-
-	return nil
 }
 
 func (p Pipeline) flushBuffer(shardID string) error {
