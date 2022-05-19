@@ -147,6 +147,11 @@ var recoverableErrorTesters = map[string]RecoverableErrorTester{
 
 // this determines whether the error is recoverable
 func IsRecoverableError(err error) bool {
+	// if err is nil, it is recoverable since no error
+	if err == nil {
+		return true
+	}
+
 	r := false
 
 	l4g.Debug("isRecoverableError, type %s, value (%#v)\n", reflect.TypeOf(err).String(), err)
