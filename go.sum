@@ -44,10 +44,6 @@ github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8
 github.com/elazarl/goproxy v0.0.0-20210801061803-8e322dfb79c4/go.mod h1:Ro8st/ElPeALwNFlcTpWmkr6IoMFfkjXAvTHpevnDsM=
 github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2/go.mod h1:gNh8nYJoAm43RfaxurUnxr+N1PwuFV3ZMl/efxlIlY8=
 github.com/erikstmartin/go-testdb v0.0.0-20141218172945-e91c57bcc918/go.mod h1:a2zkGnVExMxdzMo3M0Hi/3sEU+cWnZpSni0O6/Yb/P0=
-github.com/ezoic/go-kinesis v0.0.0-20220325232619-94552da1a3de h1:ye2lJ2ZWJX+qDxjUDZ19zjg2CB/TlVD76t7vxPeHBaM=
-github.com/ezoic/go-kinesis v0.0.0-20220325232619-94552da1a3de/go.mod h1:GBXzmxO3/hgtf9sbygT36rbN5R/m5KS7WQ/ngDHo3kM=
-github.com/ezoic/klease v0.0.0-20220326161929-7eb410241222 h1:S/f1+IE2LA7BCTCmGNOI7pQz0z2n0MwzL0NEUBoaKrM=
-github.com/ezoic/klease v0.0.0-20220326161929-7eb410241222/go.mod h1:QyKwCsdvT6hsBhAXtKZmavHcpEMfI48v7v2pi5nseYY=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/glaslos/ssdeep v0.3.1/go.mod h1:PlZQFbsBZyQURIdDRUcOfLm/yOXzgoPcv+8B3MBg7Rk=
