@@ -97,6 +97,9 @@ func (p Pipeline) processShardInternal(ksis *kinesis.Kinesis, shardID string, ex
 		}
 		args.Add("ShardIteratorType", "AFTER_SEQUENCE_NUMBER")
 		args.Add("StartingSequenceNumber", p.Checkpoint.SequenceNumber())
+	} else if p.ShardIteratorInitType == "AT_TIMESTAMP" {
+		args.Add("ShardIteratorType", p.ShardIteratorInitType)
+		args.Add("Timestamp", 1686007800) // 2023-06-05 16:30:00 PST
 	} else if len(p.ShardIteratorInitType) != 0 {
 		args.Add("ShardIteratorType", p.ShardIteratorInitType)
 	} else {
