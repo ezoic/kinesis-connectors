@@ -93,11 +93,7 @@ func (e RedshiftManifestEmitter) fileInsertStmt(fileNames []string) string {
 // Creates the COPY statment for Redshift insertion.
 func (e RedshiftManifestEmitter) copyStmt(filePath string) string {
 	b := new(bytes.Buffer)
-	c := fmt.Sprintf(
-		"CREDENTIALS 'aws_access_key_id=%s;aws_secret_access_key=%s' ",
-		os.Getenv("AWS_ACCESS_KEY"),
-		os.Getenv("AWS_SECRET_KEY"),
-	)
+	c := fmt.Sprintf("iam_role '%s' ", os.Getenv("KINESIS_IAM_ROLE"))
 	b.WriteString("COPY " + e.DataTable + " ")
 	b.WriteString("FROM 's3://" + e.S3Bucket + "/" + filePath + "' ")
 	b.WriteString(c)

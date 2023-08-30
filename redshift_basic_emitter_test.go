@@ -19,7 +19,7 @@ func TestCopyStatement(t *testing.T) {
 	}
 	f := e.copyStatement("test_prefix/test.txt")
 
-	copyStatement := fmt.Sprintf("COPY test_table FROM 's3://test_bucket/test_prefix/test.txt' CREDENTIALS 'aws_access_key_id=%v;aws_secret_access_key=%v' DELIMITER ',';", os.Getenv("AWS_ACCESS_KEY"), os.Getenv("AWS_SECRET_KEY"))
+	copyStatement := fmt.Sprintf("COPY test_table FROM 's3://test_bucket/test_prefix/test.txt' iam_role '%s'  DELIMITER ',';", os.Getenv("KINESIS_IAM_ROLE"))
 
 	if f != copyStatement {
 		t.Errorf("copyStatement() = %s want %s", f, copyStatement)
