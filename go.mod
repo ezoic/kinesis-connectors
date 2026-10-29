@@ -4,7 +4,6 @@ go 1.18
 
 replace (
 	github.com/ezoic/data-model => ../data-model
-	github.com/ezoic/ezoicdb => ../ezoicdb
 	github.com/ezoic/ezutil => ../ezutil
 	github.com/ezoic/go-charset => ../go-charset
 	github.com/ezoic/go-diff => ../go-diff
